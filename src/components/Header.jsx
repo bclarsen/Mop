@@ -1,5 +1,3 @@
-# TEST
-
 import { useState } from 'react';
 import { Settings, X, Plus, Users, UserPlus, LogOut, Check, AlertCircle } from 'lucide-react';
 import { signOut } from 'firebase/auth';
