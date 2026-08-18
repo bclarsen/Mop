@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "mop---production",
+    "production": "mop---production"
+  },
+  "targets": {},
+  "etags": {}
+}
