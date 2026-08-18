@@ -9,6 +9,16 @@ import {
   isTaskDone,
 } from '../utils/dateHelpers';
 
+const PRIORITY_POINTS = {
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+function getTaskPoints(task) {
+  return PRIORITY_POINTS[task.priority] ?? 2;
+}
+
 function groupAndSort(taskArr) {
   const grouped = taskArr.reduce((acc, task) => {
     const room = task.room || 'Other';
@@ -29,7 +39,35 @@ function groupAndSort(taskArr) {
     });
   });
 
-  return grouped;
+  // Calculate total and average priority points for each living space
+  const roomScores = {};
+  Object.keys(grouped).forEach((room) => {
+    const roomTasks = grouped[room];
+    const totalPoints = roomTasks.reduce((sum, task) => sum + getTaskPoints(task), 0);
+    const avgPoints = roomTasks.length > 0 ? totalPoints / roomTasks.length : 0;
+    roomScores[room] = { totalPoints, avgPoints };
+  });
+
+  // Sort living spaces by highest average points first; break ties by greatest total points
+  const sortedRooms = Object.keys(grouped).sort((roomA, roomB) => {
+    const scoreA = roomScores[roomA];
+    const scoreB = roomScores[roomB];
+
+    if (scoreB.avgPoints !== scoreA.avgPoints) {
+      return scoreB.avgPoints - scoreA.avgPoints;
+    }
+    if (scoreB.totalPoints !== scoreA.totalPoints) {
+      return scoreB.totalPoints - scoreA.totalPoints;
+    }
+    return roomA.localeCompare(roomB);
+  });
+
+  const sortedGrouped = {};
+  sortedRooms.forEach((room) => {
+    sortedGrouped[room] = grouped[room];
+  });
+
+  return sortedGrouped;
 }
 
 function TaskList({
@@ -39,6 +77,7 @@ function TaskList({
   completedWindowMs = DEFAULT_COMPLETED_WINDOW_MS,
   onToggleTask,
   onDeleteTask,
+  onEditTask,
   onNavigateTab,
 }) {
   const [, setTick] = useState(0);
@@ -128,6 +167,7 @@ function TaskList({
                     allAssignees={allAssignees}
                     onToggleTask={onToggleTask}
                     onDeleteTask={onDeleteTask}
+                    onEditTask={onEditTask}
                   />
                 ))}
               </div>
@@ -160,6 +200,7 @@ function TaskList({
                     allAssignees={allAssignees}
                     onToggleTask={onToggleTask}
                     onDeleteTask={onDeleteTask}
+                    onEditTask={onEditTask}
                   />
                 ))}
               </div>

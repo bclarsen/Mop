@@ -80,7 +80,7 @@ function History({ user, workspace, tasks = [] }) {
   }, [user, workspace]);
 
   return (
-    <div className="px-4 md:px-8 py-6 max-w-4xl">
+    <div className="px-4 md:px-8 py-6 w-full max-w-4xl mx-auto animate-fade-in">
       <div className="mb-6">
         <h2 className="text-xl md:text-2xl font-extrabold text-teal-950 tracking-tight">Cleaning History Log</h2>
         <p className="text-sm text-slate-500 mt-0.5">Permanent record of completed household chores and room maintenance.</p>

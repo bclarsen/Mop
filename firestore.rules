@@ -118,5 +118,16 @@ service cloud.firestore {
             request.auth.uid in get(/databases/$(database)/documents/teams/$(request.resource.data.workspace)).data.members)
         );
     }
+
+    // ─────────────────────────────
+    // NOTIFICATIONS — recipients can read, update, and delete their own notifications.
+    // Any signed-in user can create a notification for teammates.
+    // ─────────────────────────────
+    match /notifications/{notificationId} {
+      allow read, update, delete: if request.auth != null &&
+        resource.data.recipientUid == request.auth.uid;
+      allow create: if request.auth != null &&
+        request.resource.data.actorUid == request.auth.uid;
+    }
   }
 }

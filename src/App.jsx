@@ -1,6 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Users, Filter, X, ChevronDown } from 'lucide-react';
-import { isOverdue, parseDueDate, resolveCompletedWindowMs, DEFAULT_COMPLETED_WINDOW_MS, isDueWithinWindow } from './utils/dateHelpers';
+import {
+  isOverdue,
+  parseDueDate,
+  resolveCompletedWindowMs,
+  DEFAULT_COMPLETED_WINDOW_MS,
+  isDueWithinWindow,
+  isTaskDone,
+  getNextDue,
+  formatDueDate,
+} from './utils/dateHelpers';
 import { getWorkspaceDocId } from "./utils/workspaceHelpers.js";
 import { useClickOutside } from './hooks/useClickOutside';
 import {
@@ -29,7 +38,8 @@ import UserProfile from './components/UserProfile';
 import Preferences from './components/Preferences';
 import History from './components/History';
 import InviteBanner from './components/InviteBanner';
-import ReminderBanner from './components/ReminderBanner';
+import NotificationBanner from './components/NotificationBanner';
+import { markNotificationRead, deleteNotification } from './utils/notificationService';
 import { SETTINGS_TAB_IDS } from './constants/settings';
 
 const tasksRef = collection(db, 'tasks');
@@ -134,7 +144,14 @@ function App() {
   const [filterDate, setFilterDate] = useState('All');
   const [activeTab, setActiveTab] = useState('tasks');
   const [usersMap, setUsersMap] = useState({});
-  const [dismissedReminders, setDismissedReminders] = useState({});
+  const [dismissedReminders, setDismissedReminders] = useState(() => {
+    try {
+      const stored = localStorage.getItem('dismissed_reminders_app');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -189,7 +206,10 @@ function App() {
   };
 
   const handleAddTask = (newTask) => {
-    setTasks((prev) => [newTask, ...prev]);
+    setTasks((prev) => {
+      if (prev.some((t) => t.id === newTask.id)) return prev;
+      return [newTask, ...prev];
+    });
   };
 
   const handleToggleTask = (taskId, completion) => {
@@ -209,6 +229,24 @@ function App() {
 
   const handleDeleteTask = (taskId) => {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    if (editingTask?.id === taskId) {
+      setEditingTask(null);
+    }
+  };
+
+  const [editingTask, setEditingTask] = useState(null);
+
+  const handleUpdateTask = (updatedTask) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === updatedTask.id ? { ...t, ...updatedTask } : t)),
+    );
+    setEditingTask(null);
+  };
+
+  const handleStartEditTask = (task) => {
+    setEditingTask(task);
+    setActiveTab('tasks');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const [storedRooms, setStoredRooms] = useState(null);
@@ -359,6 +397,182 @@ function App() {
     };
   }, [user]);
 
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    if (!user || user.isDemo) return;
+    const q = query(
+      collection(db, 'notifications'),
+      where('recipientUid', '==', user.uid),
+    );
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        const notifs = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        }));
+        notifs.sort((a, b) => {
+          const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt || 0);
+          const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt || 0);
+          return timeB - timeA;
+        });
+        setNotifications(notifs);
+      },
+      (err) => console.warn('Note: notifications snapshot fallback:', err?.code || err),
+    );
+    return () => {
+      unsub();
+      setNotifications([]);
+    };
+  }, [user]);
+
+  const dueReminders = useMemo(() => {
+    if (!user) return [];
+    const reminders = [];
+
+    tasks.forEach((t) => {
+      if (isTaskDone(t)) return;
+
+      const isPersonal = t.workspace === 'personal' || !t.workspace;
+      const isAssignedToUser = t.assignedTo === user.uid;
+      const isUnassignedTeam = t.workspace !== 'personal' && !t.assignedTo;
+      const isOwner = t.ownerUid === user.uid;
+
+      if (!isPersonal && !isAssignedToUser && !isUnassignedTeam) {
+        return;
+      }
+      if (isPersonal && !isOwner && !isAssignedToUser) {
+        return;
+      }
+
+      const userPrefs = usersMap[user.uid]?.preferences || {};
+      const teamObj = teams.find((tm) => tm.id === t.workspace);
+      const teamPrefs = teamObj?.preferences || {};
+      const activePrefs = isPersonal ? userPrefs : teamPrefs;
+
+      const remindersEnabled = activePrefs.taskRemindersEnabled ?? true;
+      if (!remindersEnabled) return;
+
+      const advanceMs = activePrefs.reminderAdvanceMs ?? (Math.max(5, Number(activePrefs.reminderAdvanceMinutes) || 30) * 60 * 1000);
+      const quietHours = activePrefs.quietHours ?? false;
+      const quietHoursStart = activePrefs.quietHoursStart || '22:00';
+      const quietHoursEnd = activePrefs.quietHoursEnd || '07:00';
+
+      const overdue = isOverdue(t);
+      const isWithinAdvanceWindow = isDueWithinWindow(
+        t,
+        advanceMs,
+        { quietHours, quietHoursStart, quietHoursEnd },
+        now,
+      );
+
+      let dueDateVal = t.dueDate;
+      if (!dueDateVal && t.lastCompleted && t.frequency !== 'once') {
+        const nextDue = getNextDue(t.lastCompleted, t.frequency);
+        if (nextDue) dueDateVal = nextDue.toISOString();
+      }
+
+      if (overdue || isWithinAdvanceWindow) {
+        const reminderId = `due-reminder-${t.id}-${overdue ? 'overdue' : 'due'}`;
+        const teamName = isPersonal ? 'Personal' : (teamObj?.name || 'Team Workspace');
+
+        reminders.push({
+          id: reminderId,
+          taskId: t.id,
+          taskName: t.name,
+          room: t.room || 'General',
+          teamId: t.workspace || 'personal',
+          teamName,
+          type: 'due_date_reminder',
+          isOverdue: overdue,
+          title: overdue ? 'Task Overdue Reminder' : 'Task Due Date Reminder',
+          message: overdue
+            ? `Task "${t.name}" is overdue (was due ${formatDueDate(dueDateVal)})`
+            : `Task "${t.name}" is due ${formatDueDate(dueDateVal)}`,
+          dueDate: dueDateVal,
+          createdAt: overdue ? now - 1000 : now,
+          read: Boolean(dismissedReminders[reminderId]),
+        });
+      }
+    });
+
+    return reminders;
+  }, [tasks, user, teams, usersMap, dismissedReminders, now]);
+
+  const allNotifications = useMemo(() => {
+    const combined = [...notifications, ...dueReminders];
+    combined.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt || 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt || 0);
+      return timeB - timeA;
+    });
+    return combined;
+  }, [notifications, dueReminders]);
+
+  const handleMarkNotificationRead = async (notifId) => {
+    if (String(notifId).startsWith('due-reminder-')) {
+      setDismissedReminders((prev) => {
+        const next = { ...prev, [notifId]: true };
+        try {
+          localStorage.setItem(`dismissed_reminders_${user?.uid || 'guest'}`, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+      return;
+    }
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notifId ? { ...n, read: true } : n)),
+    );
+    await markNotificationRead(notifId, user?.isDemo);
+  };
+
+  const handleDeleteNotification = async (notifId) => {
+    if (String(notifId).startsWith('due-reminder-')) {
+      setDismissedReminders((prev) => {
+        const next = { ...prev, [notifId]: true };
+        try {
+          localStorage.setItem(`dismissed_reminders_${user?.uid || 'guest'}`, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+      return;
+    }
+    setNotifications((prev) => prev.filter((n) => n.id !== notifId));
+    await deleteNotification(notifId, user?.isDemo);
+  };
+
+  const handleMarkAllNotificationsAsRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    const unread = notifications.filter((n) => !n.read);
+    await Promise.all(unread.map((n) => markNotificationRead(n.id, user?.isDemo)));
+
+    setDismissedReminders((prev) => {
+      const next = { ...prev };
+      dueReminders.forEach((r) => {
+        next[r.id] = true;
+      });
+      try {
+        localStorage.setItem(`dismissed_reminders_${user?.uid || 'guest'}`, JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const handleNavigateToNotificationTask = async (notif) => {
+    await handleMarkNotificationRead(notif.id);
+    if (notif.teamId && notif.teamId !== workspace) {
+      setWorkspace(notif.teamId);
+    }
+    setActiveTab('tasks');
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F3F9F7]">
@@ -493,7 +707,10 @@ function App() {
     });
   }
 
+  const seenTaskIds = new Set();
   const workspaceTasks = filteredTasks.filter((t) => {
+    if (!t.id || seenTaskIds.has(t.id)) return false;
+    seenTaskIds.add(t.id);
     if (workspace === 'personal') {
       return (t.workspace === 'personal' || !t.workspace) && t.ownerUid === user.uid;
     }
@@ -519,25 +736,6 @@ function App() {
     setExpandedFilterType(expandedFilterType === type ? null : type);
   };
 
-  const handleDismissReminder = (taskId) => {
-    setDismissedReminders((prev) => ({ ...prev, [taskId]: true }));
-  };
-
-  const dueSoonTasks = tasks.filter((t) => {
-    const remindersEnabled = activeTeam?.preferences?.taskRemindersEnabled ?? true;
-    if (!remindersEnabled) return false;
-
-    const advanceMs = activeTeam?.preferences?.reminderAdvanceMs ?? (30 * 60 * 1000);
-    return (
-      isDueWithinWindow(t, advanceMs, {
-        quietHours: activeTeam?.preferences?.quietHours ?? false,
-        quietHoursStart: activeTeam?.preferences?.quietHoursStart,
-        quietHoursEnd: activeTeam?.preferences?.quietHoursEnd,
-      }) && !dismissedReminders[t.id]
-    );
-  });
-  void now;
-
   return (
     <div className="min-h-screen bg-[#F3F9F7] flex flex-col md:flex-row">
       <Sidebar user={user} activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -551,8 +749,24 @@ function App() {
           teams={teams}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
+          notifications={allNotifications}
+          onMarkNotificationRead={handleMarkNotificationRead}
+          onDeleteNotification={handleDeleteNotification}
+          onMarkAllNotificationsAsRead={handleMarkAllNotificationsAsRead}
           onSignOut={() => setUser(null)}
         />
+
+        {allNotifications
+          .filter((n) => !n.read)
+          .slice(0, 3)
+          .map((notif) => (
+            <NotificationBanner
+              key={notif.id}
+              notification={notif}
+              onNavigateToTask={handleNavigateToNotificationTask}
+              onDismiss={handleMarkNotificationRead}
+            />
+          ))}
 
         {myPendingInvites.map((invite) => (
           <InviteBanner
@@ -561,14 +775,6 @@ function App() {
             inviterName={usersMap[invite.inviterUid]?.displayName || 'Someone'}
             onAccept={() => handleAcceptInvite(invite)}
             onDecline={() => handleDeclineInvite(invite)}
-          />
-        ))}
-
-        {dueSoonTasks.map((task) => (
-          <ReminderBanner
-            key={task.id}
-            task={task}
-            onDismiss={handleDismissReminder}
           />
         ))}
 
@@ -686,13 +892,18 @@ function App() {
           {activeTab === 'tasks' && (
             <>
               <TaskForm
+                key={editingTask ? `edit-${editingTask.id}` : 'new-task'}
                 user={user}
                 allAssignees={allAssignees}
                 workspace={workspace}
+                activeTeam={activeTeam}
                 rooms={rooms}
                 autoAssign={activeTeam?.preferences?.autoAssign}
                 tasks={tasks}
+                editingTask={editingTask}
                 onAddTask={handleAddTask}
+                onUpdateTask={handleUpdateTask}
+                onCancelEdit={() => setEditingTask(null)}
               />
 
               <div className="px-4 md:px-8 py-3 flex items-center gap-3">
@@ -860,6 +1071,7 @@ function App() {
                 completedWindowMs={completedWindowMs}
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}
+                onEditTask={handleStartEditTask}
                 onNavigateTab={(tab) => setActiveTab(tab)}
               />
             </>

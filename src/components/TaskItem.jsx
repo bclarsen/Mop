@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Pencil,
   Trash2,
 } from 'lucide-react';
 import { addDoc, collection, deleteDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
@@ -34,7 +35,7 @@ const FREQ_LABELS = {
   monthly: 'Monthly',
 };
 
-function TaskItem({ task, currentUser, allAssignees = [], onToggleTask, onDeleteTask }) {
+function TaskItem({ task, currentUser, allAssignees = [], onToggleTask, onDeleteTask, onEditTask }) {
   const [expanded, setExpanded] = useState(false);
   const [actionError, setActionError] = useState('');
   const assignee = allAssignees.find((a) => a.uid === task.assignedTo);
@@ -206,7 +207,21 @@ function TaskItem({ task, currentUser, allAssignees = [], onToggleTask, onDelete
             </button>
 
             <button
-              className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+              type="button"
+              className="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+              title="Edit task"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onEditTask) {
+                  onEditTask(task);
+                }
+              }}
+            >
+              <Pencil size={14} strokeWidth={2} />
+            </button>
+
+            <button
+              className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
               title="Delete task"
               onClick={(e) => {
                 e.stopPropagation();

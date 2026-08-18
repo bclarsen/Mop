@@ -221,9 +221,9 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
         <div className="flex flex-col">
           <span className="text-xs font-bold text-teal-950 flex items-center gap-1.5">
             <Bell size={14} className="text-amber-500" />
-            <span>Task Reminders Banner</span>
+            <span>Task Due Date Notifications</span>
           </span>
-          <span className="text-[11px] text-slate-500">Alert roommates when a task deadline is approaching</span>
+          <span className="text-[11px] text-slate-500">Receive alerts in the notification center when a task deadline is approaching</span>
         </div>
         <input
           type="checkbox"
@@ -238,7 +238,9 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
         <div className="flex flex-col gap-3 pl-4 border-l-2 border-emerald-300">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-600">Advance Warning (mins)</label>
+              <label className="text-xs font-bold text-slate-600">
+                Notify In Advance (minutes)
+              </label>
               <input
                 type="number"
                 min="5"
@@ -248,6 +250,9 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
                 onChange={(e) => setReminderAdvanceMinutes(e.target.value)}
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
               />
+              <span className="text-[10px] text-slate-400">
+                E.g. 30 for 30m, 60 for 1h, 1440 for 24h
+              </span>
             </div>
 
             <div className="flex items-center gap-2 pt-5">
@@ -260,7 +265,7 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
                 className="h-4 w-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
               />
               <label htmlFor="quietHours" className="text-xs font-semibold text-slate-700 cursor-pointer">
-                Quiet Hours (mute overnight)
+                Quiet Hours (hold overnight notifications)
               </label>
             </div>
           </div>
@@ -322,9 +327,10 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
   const availableTeams = teams.filter((t) => t.id !== 'personal');
 
   const [prefScope, setPrefScope] = useState(() => (isPersonal ? 'personal' : 'team'));
+  const currentScope = isPersonal ? 'personal' : prefScope;
   const [selectedTeamId, setSelectedTeamId] = useState(() => (!isPersonal ? workspace : (availableTeams[0]?.id || '')));
 
-  const activeTeam = teams.find((t) => t.id === selectedTeamId) || teams.find((t) => t.id === workspace);
+  const activeTeam = teams.find((t) => t.id === (!isPersonal ? workspace : selectedTeamId)) || teams.find((t) => t.id === workspace);
   const isTeamCreator = activeTeam?.createdBy === user?.uid;
 
   // Personal preferences
@@ -333,6 +339,21 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
   );
   const [personalCompletedWindowMs, setPersonalCompletedWindowMs] = useState(
     () => profile?.preferences?.completedWindowMs ?? DEFAULT_COMPLETED_WINDOW_MS,
+  );
+  const [personalRemindersEnabled, setPersonalRemindersEnabled] = useState(
+    () => profile?.preferences?.taskRemindersEnabled ?? true,
+  );
+  const [personalReminderAdvanceMinutes, setPersonalReminderAdvanceMinutes] = useState(
+    () => Math.round((profile?.preferences?.reminderAdvanceMs ?? (30 * 60 * 1000)) / 60000),
+  );
+  const [personalQuietHours, setPersonalQuietHours] = useState(
+    () => profile?.preferences?.quietHours ?? false,
+  );
+  const [personalQuietHoursStart, setPersonalQuietHoursStart] = useState(
+    () => profile?.preferences?.quietHoursStart || '22:00',
+  );
+  const [personalQuietHoursEnd, setPersonalQuietHoursEnd] = useState(
+    () => profile?.preferences?.quietHoursEnd || '07:00',
   );
 
   const [savingPersonal, setSavingPersonal] = useState(false);
@@ -343,9 +364,19 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
     setSavingPersonal(true);
     setPersonalStatus(null);
     try {
+      const advanceMs = Math.max(
+        MIN_REMINDER_ADVANCE_MS,
+        (Number(personalReminderAdvanceMinutes) || 30) * 60000,
+      );
+
       const updatedPrefs = {
         defaultWorkspace,
         completedWindowMs: Number(personalCompletedWindowMs),
+        taskRemindersEnabled: personalRemindersEnabled,
+        reminderAdvanceMs: advanceMs,
+        quietHours: personalQuietHours,
+        quietHoursStart: personalQuietHoursStart,
+        quietHoursEnd: personalQuietHoursEnd,
       };
 
       if (!user?.isDemo) {
@@ -362,7 +393,7 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
         onUpdateProfile(updatedPrefs);
       }
 
-      setPersonalStatus({ type: 'success', message: 'Personal preferences saved. Completed tasks will archive according to this timeframe.' });
+      setPersonalStatus({ type: 'success', message: 'Personal preferences saved. Settings applied to your notification center.' });
     } catch (err) {
       console.error('Error saving personal prefs:', err);
       setPersonalStatus({ type: 'error', message: 'Failed to save preferences.' });
@@ -372,44 +403,46 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
   };
 
   return (
-    <div className="px-4 md:px-8 py-6 max-w-3xl flex flex-col gap-6 animate-fade-in">
+    <div className="px-4 md:px-8 py-6 w-full max-w-3xl mx-auto flex flex-col gap-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-teal-950 tracking-tight">Preferences & Settings</h2>
           <p className="text-sm text-slate-500 mt-0.5">Customize your workflow and household automation rules.</p>
         </div>
 
-        {/* Personal vs Team Toggle */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200/90 w-fit">
-          <button
-            type="button"
-            onClick={() => setPrefScope('personal')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer ${
-              prefScope === 'personal'
-                ? 'bg-white text-emerald-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <User size={15} strokeWidth={2.5} />
-            <span>Personal</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setPrefScope('team')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer ${
-              prefScope === 'team'
-                ? 'bg-white text-emerald-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Users size={15} strokeWidth={2.5} />
-            <span>Team</span>
-          </button>
-        </div>
+        {/* Personal vs Team Toggle - Only shown in team workspaces */}
+        {!isPersonal && (
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200/90 w-fit">
+            <button
+              type="button"
+              onClick={() => setPrefScope('personal')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer ${
+                currentScope === 'personal'
+                  ? 'bg-white text-emerald-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <User size={15} strokeWidth={2.5} />
+              <span>Personal</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPrefScope('team')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer ${
+                currentScope === 'team'
+                  ? 'bg-white text-emerald-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Users size={15} strokeWidth={2.5} />
+              <span>Team</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Personal Settings Card */}
-      {prefScope === 'personal' && (
+      {currentScope === 'personal' && (
         <div className="bg-white border border-emerald-100 rounded-2xl p-6 shadow-xs animate-fade-in">
           <h3 className="text-base font-extrabold text-teal-950 mb-1">Your Personal Defaults</h3>
           <p className="text-xs text-slate-500 mb-5">These preferences only apply to your individual account.</p>
@@ -439,6 +472,81 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
               onChange={(newMs) => setPersonalCompletedWindowMs(newMs)}
             />
 
+            <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-teal-950 flex items-center gap-1.5">
+                  <Bell size={14} className="text-amber-500" />
+                  <span>Task Due Date Notifications</span>
+                </span>
+                <span className="text-[11px] text-slate-500">Receive alerts in the notification center when personal task deadlines approach</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={personalRemindersEnabled}
+                onChange={(e) => setPersonalRemindersEnabled(e.target.checked)}
+                className="h-4 w-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+              />
+            </div>
+
+            {personalRemindersEnabled && (
+              <div className="flex flex-col gap-3 pl-4 border-l-2 border-emerald-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-slate-600">
+                      Notify In Advance (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      min="5"
+                      step="5"
+                      value={personalReminderAdvanceMinutes}
+                      onChange={(e) => setPersonalReminderAdvanceMinutes(e.target.value)}
+                      className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                    />
+                    <span className="text-[10px] text-slate-400">
+                      E.g. 30 for 30m, 60 for 1h, 1440 for 24h
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-5">
+                    <input
+                      type="checkbox"
+                      id="personalQuietHours"
+                      checked={personalQuietHours}
+                      onChange={(e) => setPersonalQuietHours(e.target.checked)}
+                      className="h-4 w-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+                    />
+                    <label htmlFor="personalQuietHours" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                      Quiet Hours (hold overnight notifications)
+                    </label>
+                  </div>
+                </div>
+
+                {personalQuietHours && (
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-600">Quiet Start</label>
+                      <input
+                        type="time"
+                        value={personalQuietHoursStart}
+                        onChange={(e) => setPersonalQuietHoursStart(e.target.value)}
+                        className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-600">Quiet End</label>
+                      <input
+                        type="time"
+                        value={personalQuietHoursEnd}
+                        onChange={(e) => setPersonalQuietHoursEnd(e.target.value)}
+                        className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {personalStatus && (
               <div className={`p-3 rounded-xl flex items-center gap-2 text-xs font-semibold ${
                 personalStatus.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
@@ -463,7 +571,7 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
       )}
 
       {/* Team Settings Card */}
-      {prefScope === 'team' && (
+      {currentScope === 'team' && !isPersonal && (
         <div className="bg-white border border-emerald-100 rounded-2xl p-6 shadow-xs animate-fade-in">
           {availableTeams.length === 0 ? (
             <div className="py-8 text-center flex flex-col items-center justify-center gap-2">

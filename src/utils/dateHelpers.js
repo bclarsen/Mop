@@ -51,9 +51,15 @@ export function isQuietHours(date = new Date(), start = '22:00', end = '08:00') 
  * Checks if a task is due within the next specified window in milliseconds (default 30 minutes)
  * and is not already overdue or completed. If quietHours is enabled and currently active, holds reminders.
  */
-export function isDueWithinWindow(task, windowMs = 30 * 60 * 1000, options = {}) {
+export function isDueWithinWindow(
+  task,
+  windowMs = 30 * 60 * 1000,
+  options = {},
+  currentTime = Date.now(),
+) {
   if (!task) return false;
-  if (options.quietHours && isQuietHours(new Date(), options.quietHoursStart, options.quietHoursEnd)) {
+  const currentDate = new Date(currentTime);
+  if (options.quietHours && isQuietHours(currentDate, options.quietHoursStart, options.quietHoursEnd)) {
     return false;
   }
 
@@ -71,10 +77,9 @@ export function isDueWithinWindow(task, windowMs = 30 * 60 * 1000, options = {})
 
   if (!dueTimeMs) return false;
 
-  const now = Date.now();
-  const timeUntilDue = dueTimeMs - now;
+  const timeUntilDue = dueTimeMs - currentTime;
 
-  // Due within window (e.g. 0 < timeUntilDue <= 30 mins)
+  // Due within window (e.g. 0 < timeUntilDue <= windowMs)
   return timeUntilDue > 0 && timeUntilDue <= windowMs;
 }
 

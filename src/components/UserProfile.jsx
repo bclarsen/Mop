@@ -48,7 +48,7 @@ function UserProfile({ user, profile, onProfileSave }) {
   };
 
   return (
-    <div className="px-4 md:px-8 py-6 max-w-2xl">
+    <div className="px-4 md:px-8 py-6 w-full max-w-2xl mx-auto animate-fade-in">
       <div className="mb-6">
         <h2 className="text-xl md:text-2xl font-extrabold text-teal-950 tracking-tight">Your Profile</h2>
         <p className="text-sm text-slate-500 mt-0.5">Manage how your name and identity appear on tasks.</p>

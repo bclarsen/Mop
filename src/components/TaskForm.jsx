@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Plus, X, Calendar, Clock, User, Layers, Flag } from 'lucide-react';
-import { collection, addDoc } from 'firebase/firestore';
+import { Plus, X, Calendar, Clock, User, Layers, Flag, Pencil, Check } from 'lucide-react';
+import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { notifyTaskCreation } from '../utils/notificationService';
 
 const tasksRef = collection(db, 'tasks');
 
@@ -31,20 +32,48 @@ function TaskForm({
   user,
   allAssignees = [],
   workspace,
+  activeTeam,
   rooms = ['Kitchen', 'Bathroom', 'Living Room', 'Bedroom', 'Other'],
   autoAssign = 'manual',
   tasks = [],
+  editingTask = null,
   onAddTask,
+  onUpdateTask,
+  onCancelEdit,
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const [name, setName] = useState('');
-  const [room, setRoom] = useState('Kitchen');
-  const [frequency, setFrequency] = useState('weekly');
-  const [priority, setPriority] = useState('medium');
-  const [dueDate, setDueDate] = useState('');
-  const [dueTime, setDueTime] = useState('');
-  const [notes, setNotes] = useState('');
-  const [assignedTo, setAssignedTo] = useState(workspace === 'personal' ? user?.uid : '');
+  const [expanded, setExpanded] = useState(Boolean(editingTask));
+  const [name, setName] = useState(editingTask?.name || '');
+  const [room, setRoom] = useState(editingTask?.room || rooms[0] || 'Kitchen');
+  const [frequency, setFrequency] = useState(editingTask?.frequency || 'weekly');
+  const [priority, setPriority] = useState(editingTask?.priority || 'medium');
+  const [dueDate, setDueDate] = useState(
+    editingTask?.dueDate ? editingTask.dueDate.split('T')[0] : '',
+  );
+  const [dueTime, setDueTime] = useState(
+    editingTask?.dueDate && editingTask.dueDate.includes('T')
+      ? editingTask.dueDate.split('T')[1]
+      : '',
+  );
+  const [notes, setNotes] = useState(editingTask?.notes || '');
+  const [assignedTo, setAssignedTo] = useState(
+    editingTask?.assignedTo !== undefined
+      ? editingTask.assignedTo
+      : workspace === 'personal'
+      ? user?.uid
+      : '',
+  );
+
+  const handleCancel = () => {
+    setName('');
+    setNotes('');
+    setDueDate('');
+    setDueTime('');
+    setAssignedTo(workspace === 'personal' ? user?.uid : '');
+    setExpanded(false);
+    if (onCancelEdit) {
+      onCancelEdit();
+    }
+  };
 
   const isRotating = workspace !== 'personal' && autoAssign === 'rotate';
   const rotatedAssignee = isRotating
@@ -52,17 +81,46 @@ function TaskForm({
     : '';
   const rotatedName = allAssignees.find((a) => a.uid === rotatedAssignee)?.name;
 
-  const addTask = async (e) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!name.trim()) return;
 
     let resolvedAssignee;
     if (workspace === 'personal') {
       resolvedAssignee = user?.uid;
-    } else if (isRotating) {
+    } else if (isRotating && !editingTask) {
       resolvedAssignee = assignedTo || rotatedAssignee;
     } else {
       resolvedAssignee = assignedTo;
+    }
+
+    if (editingTask) {
+      const updatedFields = {
+        name: name.trim(),
+        room,
+        frequency,
+        priority,
+        dueDate: dueDate ? (dueTime ? `${dueDate}T${dueTime}` : dueDate) : null,
+        assignedTo: resolvedAssignee,
+        notes: notes.trim(),
+      };
+
+      try {
+        if (!user?.isDemo) {
+          await updateDoc(doc(db, 'tasks', editingTask.id), updatedFields);
+        }
+        if (onUpdateTask) {
+          onUpdateTask({ ...editingTask, ...updatedFields });
+        }
+      } catch (err) {
+        console.warn('Error updating task in Firestore, updating local state:', err);
+        if (onUpdateTask) {
+          onUpdateTask({ ...editingTask, ...updatedFields });
+        }
+      }
+
+      handleCancel();
+      return;
     }
 
     const newTaskData = {
@@ -82,11 +140,27 @@ function TaskForm({
     try {
       if (!user?.isDemo) {
         const docRef = await addDoc(tasksRef, newTaskData);
-        if (onAddTask) {
-          onAddTask({ id: docRef.id, ...newTaskData });
+        if (workspace !== 'personal' && activeTeam) {
+          await notifyTaskCreation({
+            user,
+            workspace,
+            activeTeam,
+            allAssignees,
+            task: { id: docRef.id, ...newTaskData },
+          });
         }
       } else if (onAddTask) {
-        onAddTask({ id: `demo-task-${Date.now()}`, ...newTaskData });
+        const demoTaskId = `demo-task-${Date.now()}`;
+        onAddTask({ id: demoTaskId, ...newTaskData });
+        if (workspace !== 'personal' && activeTeam) {
+          await notifyTaskCreation({
+            user,
+            workspace,
+            activeTeam,
+            allAssignees,
+            task: { id: demoTaskId, ...newTaskData },
+          });
+        }
       }
     } catch (err) {
       console.warn('Error adding task to Firestore, adding to local state:', err);
@@ -95,12 +169,7 @@ function TaskForm({
       }
     }
 
-    setName('');
-    setNotes('');
-    setDueDate('');
-    setDueTime('');
-    setAssignedTo(workspace === 'personal' ? user?.uid : '');
-    setExpanded(false);
+    handleCancel();
   };
 
   return (
@@ -114,13 +183,27 @@ function TaskForm({
           <span>Add New Task</span>
         </button>
       ) : (
-        <form onSubmit={addTask} className="bg-white border border-emerald-200/90 rounded-3xl p-5 md:p-6 shadow-md shadow-emerald-950/5 animate-fade-in flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="bg-white border border-emerald-200/90 rounded-3xl p-5 md:p-6 shadow-md shadow-emerald-950/5 animate-fade-in flex flex-col gap-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-extrabold text-teal-950 tracking-tight">Create Chore or Task</h3>
+            <div className="flex items-center gap-2.5">
+              <div className={`p-2 rounded-xl ${editingTask ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                {editingTask ? <Pencil size={18} strokeWidth={2.2} /> : <Plus size={18} strokeWidth={2.5} />}
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-teal-950 tracking-tight">
+                  {editingTask ? 'Edit Chore or Task' : 'Create Chore or Task'}
+                </h3>
+                {editingTask && (
+                  <p className="text-xs text-slate-500 font-medium truncate max-w-xs sm:max-w-md">
+                    Modifying: <span className="font-bold text-slate-700">{editingTask.name}</span>
+                  </p>
+                )}
+              </div>
+            </div>
             <button
               type="button"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              onClick={() => setExpanded(false)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              onClick={handleCancel}
             >
               <X size={18} />
             </button>
@@ -259,17 +342,24 @@ function TaskForm({
           <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
             <button
               type="button"
-              className="px-4 py-2.5 text-slate-600 hover:text-slate-800 text-xs font-semibold rounded-xl"
-              onClick={() => setExpanded(false)}
+              className="px-4 py-2.5 text-slate-600 hover:text-slate-800 text-xs font-semibold rounded-xl cursor-pointer"
+              onClick={handleCancel}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!name.trim()}
-              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1.5"
             >
-              Create Task
+              {editingTask ? (
+                <>
+                  <Check size={14} strokeWidth={2.5} />
+                  <span>Save Changes</span>
+                </>
+              ) : (
+                <span>Create Task</span>
+              )}
             </button>
           </div>
         </form>
