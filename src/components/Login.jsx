@@ -26,6 +26,8 @@ function Login({ onGuestLogin }) {
         setErrorMsg('Sign-in popup was closed before completing authentication.');
       } else if (code === 'auth/configuration-not-found' || code === 'auth/invalid-api-key') {
         setErrorMsg(`Firebase config issue (${code}). Please check that the API key and project ID are correctly configured.`);
+      } else if (message?.toLowerCase().includes('database is closing') || message?.toLowerCase().includes('indexeddb') || code === 'auth/internal-error') {
+        setErrorMsg('Browser storage/IndexedDB connection was reset. Please open the app in a new dedicated tab, refresh the page, or clear site cookies/data.');
       } else {
         setErrorMsg(`Google sign-in failed: ${code ? `${code} - ` : ''}${message || 'Please try again or use Instant Guest mode.'}`);
       }
