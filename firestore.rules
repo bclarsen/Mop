@@ -48,11 +48,11 @@ service cloud.firestore {
     match /teamInvites/{inviteId} {
       allow read: if request.auth != null && (
         request.auth.uid == resource.data.inviterUid ||
-        request.auth.token.email.lower() == resource.data.inviteeEmail ||
+        ('email' in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() == resource.data.inviteeEmail) ||
         request.auth.uid in get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.members
       );
       allow create: if request.auth != null && request.auth.uid == request.resource.data.inviterUid;
-      allow update: if request.auth != null && request.auth.token.email.lower() == resource.data.inviteeEmail;
+      allow update: if request.auth != null && 'email' in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() == resource.data.inviteeEmail;
     }
 
     // ─────────────────────────────
