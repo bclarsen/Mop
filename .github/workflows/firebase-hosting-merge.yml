@@ -15,6 +15,12 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
+<<<<<<< HEAD
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MOP___PRODUCTION }}
           channelId: live
           projectId: mop---production
+=======
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CLEANER_APP_E63BC }}
+          channelId: live
+          projectId: cleaner-app-e63bc
+>>>>>>> 0d3f27fb570fe6dd7f50253dd83a7041c6ef5a93

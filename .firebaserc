@@ -1,8 +1,13 @@
 {
   "projects": {
+<<<<<<< HEAD
     "default": "mop---production",
     "production": "mop---production"
   },
   "targets": {},
   "etags": {}
+=======
+    "default": "cleaner-app-e63bc"
+  }
+>>>>>>> 0d3f27fb570fe6dd7f50253dd83a7041c6ef5a93
 }

@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+# TEST
+
+>>>>>>> 0d3f27fb570fe6dd7f50253dd83a7041c6ef5a93
 import { useState } from 'react';
 import { Settings, X, Plus, Users, UserPlus, LogOut, Check, AlertCircle } from 'lucide-react';
 import { signOut } from 'firebase/auth';
