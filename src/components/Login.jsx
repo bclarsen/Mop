@@ -13,11 +13,21 @@ function Login({ onGuestLogin }) {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
-      console.warn('Google sign-in error:', err);
-      if (err.code === 'auth/unauthorized-domain') {
-        setErrorMsg('Domain not authorized for Google OAuth. Please use Guest Login for preview!');
+      console.error('Google sign-in error:', err);
+      const code = err?.code || '';
+      const message = err?.message || '';
+      if (code === 'auth/unauthorized-domain') {
+        setErrorMsg(`Domain not authorized in Firebase Console (${window.location.hostname}). Add this domain in Firebase Console > Authentication > Settings > Authorized domains.`);
+      } else if (code === 'auth/operation-not-allowed') {
+        setErrorMsg('Google Sign-In is not enabled in Firebase Console. Enable it in Authentication > Sign-in method > Google.');
+      } else if (code === 'auth/popup-blocked') {
+        setErrorMsg('Popup was blocked by your browser. Please allow popups for this site and try again.');
+      } else if (code === 'auth/popup-closed-by-user') {
+        setErrorMsg('Sign-in popup was closed before completing authentication.');
+      } else if (code === 'auth/configuration-not-found' || code === 'auth/invalid-api-key') {
+        setErrorMsg(`Firebase config issue (${code}). Please check that the API key and project ID are correctly configured.`);
       } else {
-        setErrorMsg('Could not complete Google Sign-in. You can continue with Instant Guest mode.');
+        setErrorMsg(`Google sign-in failed: ${code ? `${code} - ` : ''}${message || 'Please try again or use Instant Guest mode.'}`);
       }
     } finally {
       setLoading(false);
