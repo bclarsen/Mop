@@ -3,7 +3,6 @@ import { getFirestore } from "firebase/firestore";
 import {
   initializeAuth,
   browserPopupRedirectResolver,
-  indexedDBLocalPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
   inMemoryPersistence,
@@ -23,14 +22,15 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-// Initialize Auth with multi-layer persistence and browser popup/redirect resolver
+// Use Web Storage (localStorage) persistence to guarantee zero IndexedDB lock/closing collisions
 export const auth = initializeAuth(app, {
-  persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, inMemoryPersistence],
+  persistence: [browserLocalPersistence, browserSessionPersistence, inMemoryPersistence],
   popupRedirectResolver: browserPopupRedirectResolver
 });
 
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
+
 
 
 
