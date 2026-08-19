@@ -43,7 +43,7 @@ function Sidebar({ user, activeTab, setActiveTab }) {
                     <img
                         src="/Mop-icon-dark.png"
                         alt="Mop Icon Dark"
-                        className="hidden dark:block h-10 w-auto max-h-10 object-contain shrink-0 scale-110"
+                        className="hidden dark:block h-14 w-auto max-h-14 object-contain shrink-0"
                     />
                     <h1 className="text-3xl ml-1 font-extrabold text-teal-950 dark:text-[#F0FDF4] tracking-tight leading-none">Mop</h1>
                 </div>

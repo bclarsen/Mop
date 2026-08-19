@@ -72,7 +72,7 @@ function Login({ onGuestLogin }) {
             <img
               src="/Mop-icon-dark.png"
               alt="Mop Logo Dark"
-              className="hidden dark:block h-12 w-auto object-contain rounded-xl scale-110"
+              className="hidden dark:block h-16 w-auto object-contain rounded-xl"
             />
             <h1 className="text-3xl font-extrabold text-teal-950 tracking-tight leading-none">Mop</h1>
           </div>
