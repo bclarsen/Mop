@@ -70,7 +70,7 @@ function Login({ onGuestLogin }) {
               }}
             />
             <img
-              src="/mop_icon_dark.png"
+              src="/Mop-icon-dark.png"
               alt="Mop Logo Dark"
               className="hidden dark:block h-12 w-auto object-contain rounded-xl scale-110"
             />
