@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Save, Check, AlertCircle, Bell, Shuffle, User, Users, Clock } from 'lucide-react';
+import { Save, Check, AlertCircle, Bell, Shuffle, User, Users, Clock, Moon, Sun, Monitor } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { CustomSelect } from './CustomSelect';
 import {
   COMPLETED_WINDOW_OPTIONS,
   DEFAULT_COMPLETED_WINDOW_MS,
@@ -9,6 +10,7 @@ import {
   formatDuration,
   msToParts,
 } from '../utils/dateHelpers';
+import { applyTheme, getInitialTheme } from '../utils/theme';
 
 function CompletedWindowControl({
   value,
@@ -52,32 +54,28 @@ function CompletedWindowControl({
     <div className="flex flex-col gap-2">
       <label
         htmlFor={`${idPrefix}-completed-window`}
-        className="text-xs font-bold text-teal-950 uppercase tracking-wider flex items-center gap-1.5"
+        className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5"
       >
-        <Clock size={14} className="text-emerald-600" />
+        <Clock size={14} className="text-emerald-600 dark:text-emerald-400" />
         <span>Completed Tasks Visible For</span>
       </label>
-      <select
+      <CustomSelect
         id={`${idPrefix}-completed-window`}
         value={mode}
         disabled={disabled}
-        onChange={(e) => handleDropdownChange(e.target.value)}
-        className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white disabled:opacity-60 cursor-pointer"
-      >
-        {COMPLETED_WINDOW_OPTIONS.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-        <option value="custom">Custom</option>
-      </select>
+        onChange={handleDropdownChange}
+        options={[
+          ...COMPLETED_WINDOW_OPTIONS,
+          { value: 'custom', label: 'Custom' }
+        ]}
+      />
 
       {mode === 'custom' && (
-        <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/90 rounded-2xl flex flex-col gap-3 animate-fade-in">
-          <div className="text-xs font-bold text-teal-950">Specify Custom Time:</div>
+        <div className="p-3.5 bg-emerald-50/70 dark:bg-[#1C2C27]/70 border border-emerald-200/90 dark:border-[#253D36] rounded-2xl flex flex-col gap-3 animate-fade-in">
+          <div className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4]">Specify Custom Time:</div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label htmlFor={`${idPrefix}-hours`} className="text-[11px] font-bold text-slate-700">
+              <label htmlFor={`${idPrefix}-hours`} className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
                 Hours
               </label>
               <input
@@ -88,12 +86,12 @@ function CompletedWindowControl({
                 disabled={disabled}
                 value={customHours}
                 onChange={(e) => handleHoursChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-60"
+                className="w-full px-3 py-2 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] rounded-lg text-sm text-slate-800 dark:text-[#F0FDF4] focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-60"
                 placeholder="0"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor={`${idPrefix}-seconds`} className="text-[11px] font-bold text-slate-700">
+              <label htmlFor={`${idPrefix}-seconds`} className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
                 Seconds
               </label>
               <input
@@ -104,14 +102,14 @@ function CompletedWindowControl({
                 disabled={disabled}
                 value={customSeconds}
                 onChange={(e) => handleSecondsChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-60"
+                className="w-full px-3 py-2 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] rounded-lg text-sm text-slate-800 dark:text-[#F0FDF4] focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-60"
                 placeholder="0"
               />
             </div>
           </div>
-          <div className="text-[11px] text-emerald-900 bg-white/90 border border-emerald-200/60 rounded-xl px-3 py-2 flex items-center justify-between">
-            <span className="text-slate-600 font-medium">Tasks will disappear after:</span>
-            <strong className="font-extrabold text-emerald-800">
+          <div className="text-[11px] text-emerald-900 dark:text-emerald-200 bg-white/90 dark:bg-[#15221E] border border-emerald-200/60 dark:border-[#253D36] rounded-xl px-3 py-2 flex items-center justify-between">
+            <span className="text-slate-600 dark:text-slate-400 font-medium">Tasks will disappear after:</span>
+            <strong className="font-extrabold text-emerald-800 dark:text-emerald-300">
               {formatDuration((customHours * 3600 + customSeconds) * 1000)}
             </strong>
           </div>
@@ -195,19 +193,19 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
   return (
     <form onSubmit={handleSaveTeam} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold text-teal-950 uppercase tracking-wider flex items-center gap-1.5">
-          <Shuffle size={14} className="text-emerald-600" />
+        <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+          <Shuffle size={14} className="text-emerald-600 dark:text-emerald-400" />
           <span>Auto-Assign Mode</span>
         </label>
-        <select
+        <CustomSelect
           value={teamAutoAssign}
           disabled={!isTeamCreator}
-          onChange={(e) => setTeamAutoAssign(e.target.value)}
-          className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white disabled:opacity-60"
-        >
-          <option value="manual">Manual Assignment</option>
-          <option value="rotate">Automatic Fair Rotation</option>
-        </select>
+          onChange={setTeamAutoAssign}
+          options={[
+            { value: 'manual', label: 'Manual Assignment' },
+            { value: 'rotate', label: 'Automatic Fair Rotation' }
+          ]}
+        />
       </div>
 
       <CompletedWindowControl
@@ -217,28 +215,28 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
         onChange={(newMs) => setTeamCompletedWindowMs(newMs)}
       />
 
-      <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+      <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-[#1C2C27] rounded-xl border border-slate-200 dark:border-[#253D36]">
         <div className="flex flex-col">
-          <span className="text-xs font-bold text-teal-950 flex items-center gap-1.5">
-            <Bell size={14} className="text-amber-500" />
+          <span className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] flex items-center gap-1.5">
+            <Bell size={14} className="text-amber-500 dark:text-amber-400" />
             <span>Task Due Date Notifications</span>
           </span>
-          <span className="text-[11px] text-slate-500">Receive alerts in the notification center when a task deadline is approaching</span>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">Receive alerts in the notification center when a task deadline is approaching</span>
         </div>
         <input
           type="checkbox"
           checked={remindersEnabled}
           disabled={!isTeamCreator}
           onChange={(e) => setRemindersEnabled(e.target.checked)}
-          className="h-4 w-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+          className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer"
         />
       </div>
 
       {remindersEnabled && (
-        <div className="flex flex-col gap-3 pl-4 border-l-2 border-emerald-300">
+        <div className="flex flex-col gap-3 pl-4 border-l-2 border-emerald-300 dark:border-emerald-700">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-600">
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
                 Notify In Advance (minutes)
               </label>
               <input
@@ -248,9 +246,9 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
                 value={reminderAdvanceMinutes}
                 disabled={!isTeamCreator}
                 onChange={(e) => setReminderAdvanceMinutes(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                className="px-3 py-2 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-sm"
               />
-              <span className="text-[10px] text-slate-400">
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">
                 E.g. 30 for 30m, 60 for 1h, 1440 for 24h
               </span>
             </div>
@@ -262,9 +260,9 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
                 checked={quietHours}
                 disabled={!isTeamCreator}
                 onChange={(e) => setQuietHours(e.target.checked)}
-                className="h-4 w-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+                className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer"
               />
-              <label htmlFor="quietHours" className="text-xs font-semibold text-slate-700 cursor-pointer">
+              <label htmlFor="quietHours" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                 Quiet Hours (hold overnight notifications)
               </label>
             </div>
@@ -273,23 +271,23 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
           {quietHours && (
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-600">Quiet Start</label>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet Start</label>
                 <input
                   type="time"
                   value={quietHoursStart}
                   disabled={!isTeamCreator}
                   onChange={(e) => setQuietHoursStart(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  className="px-3 py-1.5 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-600">Quiet End</label>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet End</label>
                 <input
                   type="time"
                   value={quietHoursEnd}
                   disabled={!isTeamCreator}
                   onChange={(e) => setQuietHoursEnd(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  className="px-3 py-1.5 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs"
                 />
               </div>
             </div>
@@ -299,7 +297,7 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
 
       {teamStatus && (
         <div className={`p-3 rounded-xl flex items-center gap-2 text-xs font-semibold ${
-          teamStatus.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+          teamStatus.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
         }`}>
           {teamStatus.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
           <span>{teamStatus.message}</span>
@@ -334,6 +332,7 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
   const isTeamCreator = activeTeam?.createdBy === user?.uid;
 
   // Personal preferences
+  const [theme, setTheme] = useState(() => profile?.preferences?.theme || getInitialTheme() || 'light');
   const [defaultWorkspace, setDefaultWorkspace] = useState(
     () => profile?.preferences?.defaultWorkspace || 'personal',
   );
@@ -359,6 +358,11 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
   const [savingPersonal, setSavingPersonal] = useState(false);
   const [personalStatus, setPersonalStatus] = useState(null);
 
+  const handleThemeChange = (newTheme) => {
+    setTheme(newTheme);
+    applyTheme(newTheme);
+  };
+
   const handleSavePersonal = async (e) => {
     e.preventDefault();
     setSavingPersonal(true);
@@ -370,6 +374,7 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
       );
 
       const updatedPrefs = {
+        theme,
         defaultWorkspace,
         completedWindowMs: Number(personalCompletedWindowMs),
         taskRemindersEnabled: personalRemindersEnabled,
@@ -378,6 +383,9 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
         quietHoursStart: personalQuietHoursStart,
         quietHoursEnd: personalQuietHoursEnd,
       };
+
+      // Ensure theme is applied
+      applyTheme(theme);
 
       if (!user?.isDemo) {
         await setDoc(
@@ -393,7 +401,7 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
         onUpdateProfile(updatedPrefs);
       }
 
-      setPersonalStatus({ type: 'success', message: 'Personal preferences saved. Settings applied to your notification center.' });
+      setPersonalStatus({ type: 'success', message: 'Personal preferences saved. Theme and notification settings applied.' });
     } catch (err) {
       console.error('Error saving personal prefs:', err);
       setPersonalStatus({ type: 'error', message: 'Failed to save preferences.' });
@@ -406,20 +414,20 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
     <div className="px-4 md:px-8 py-6 w-full max-w-3xl mx-auto flex flex-col gap-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-teal-950 tracking-tight">Preferences & Settings</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Customize your workflow and household automation rules.</p>
+          <h2 className="text-xl md:text-2xl font-extrabold text-teal-950 dark:text-[#F0FDF4] tracking-tight">Preferences & Settings</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Customize your workflow, color theme, and household automation rules.</p>
         </div>
 
         {/* Personal vs Team Toggle - Only shown in team workspaces */}
         {!isPersonal && (
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-2xl border border-slate-200/90 w-fit">
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-[#1C2C27] rounded-2xl border border-slate-200/90 dark:border-[#253D36] w-fit">
             <button
               type="button"
               onClick={() => setPrefScope('personal')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer ${
                 currentScope === 'personal'
-                  ? 'bg-white text-emerald-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-[#15221E] text-emerald-700 dark:text-emerald-300 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               <User size={15} strokeWidth={2.5} />
@@ -430,8 +438,8 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
               onClick={() => setPrefScope('team')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer ${
                 currentScope === 'team'
-                  ? 'bg-white text-emerald-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white dark:bg-[#15221E] text-emerald-700 dark:text-emerald-300 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               <Users size={15} strokeWidth={2.5} />
@@ -443,27 +451,119 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
 
       {/* Personal Settings Card */}
       {currentScope === 'personal' && (
-        <div className="bg-white border border-emerald-100 rounded-2xl p-6 shadow-xs animate-fade-in">
-          <h3 className="text-base font-extrabold text-teal-950 mb-1">Your Personal Defaults</h3>
-          <p className="text-xs text-slate-500 mb-5">These preferences only apply to your individual account.</p>
+        <div className="bg-white dark:bg-[#15221E] border border-emerald-100 dark:border-[#213630] rounded-2xl p-6 shadow-xs animate-fade-in transition-colors">
+          <h3 className="text-base font-extrabold text-teal-950 dark:text-[#F0FDF4] mb-1">Your Personal Defaults</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">These preferences only apply to your individual account.</p>
 
-          <form onSubmit={handleSavePersonal} className="flex flex-col gap-4">
+          <form onSubmit={handleSavePersonal} className="flex flex-col gap-5">
+            {/* Theme Palette Selection (Option 1: Forest Night) */}
+            <div className="flex flex-col gap-2.5 pb-4 border-b border-slate-100 dark:border-[#213630]">
+              <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+                <Moon size={14} className="text-emerald-600 dark:text-emerald-400" />
+                <span>Theme & Appearance</span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                {/* Forest Night Card */}
+                <button
+                  type="button"
+                  onClick={() => handleThemeChange('forest_night')}
+                  className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                    theme === 'forest_night' || theme === 'dark'
+                      ? 'border-emerald-500 bg-[#0C1311] text-[#F0FDF4] ring-2 ring-emerald-500/40 shadow-sm'
+                      : 'border-slate-200 dark:border-[#253D36] bg-[#0C1311]/90 text-[#F0FDF4] hover:border-emerald-500/60'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-[#15221E] text-emerald-400">
+                        <Moon size={15} />
+                      </div>
+                      <span className="text-xs font-bold text-emerald-300">Forest Night</span>
+                    </div>
+                    {(theme === 'forest_night' || theme === 'dark') && (
+                      <Check size={14} className="text-emerald-400 font-extrabold" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="w-4 h-4 rounded-full bg-[#0C1311] border border-[#233832]" title="Canvas (#0C1311)" />
+                    <span className="w-4 h-4 rounded-full bg-[#15221E] border border-[#233832]" title="Panels (#15221E)" />
+                    <span className="w-4 h-4 rounded-full bg-[#10B981]" title="Emerald Accent (#10B981)" />
+                    <span className="w-4 h-4 rounded-full bg-[#F0FDF4]" title="Sage Typography (#F0FDF4)" />
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-2">Deep pine charcoal with rich emerald accents</span>
+                </button>
+
+                {/* Clean Light Card */}
+                <button
+                  type="button"
+                  onClick={() => handleThemeChange('light')}
+                  className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                    theme === 'light'
+                      ? 'border-emerald-500 bg-white text-slate-900 ring-2 ring-emerald-500/40 shadow-sm'
+                      : 'border-slate-200 dark:border-[#253D36] bg-white text-slate-800 hover:border-emerald-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
+                        <Sun size={15} />
+                      </div>
+                      <span className="text-xs font-bold text-slate-800">Clean Light</span>
+                    </div>
+                    {theme === 'light' && (
+                      <Check size={14} className="text-emerald-600 font-extrabold" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="w-4 h-4 rounded-full bg-[#F3F9F7] border border-slate-200" title="Canvas (#F3F9F7)" />
+                    <span className="w-4 h-4 rounded-full bg-white border border-slate-200" title="Panels (#FFFFFF)" />
+                    <span className="w-4 h-4 rounded-full bg-[#059669]" title="Mint Accent (#059669)" />
+                    <span className="w-4 h-4 rounded-full bg-[#0F172A]" title="Slate Typography (#0F172A)" />
+                  </div>
+                  <span className="text-[10px] text-slate-500 mt-2">Fresh mint and light crystal canvas</span>
+                </button>
+
+                {/* System Match Card */}
+                <button
+                  type="button"
+                  onClick={() => handleThemeChange('system')}
+                  className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                    theme === 'system'
+                      ? 'border-emerald-500 bg-slate-50 dark:bg-[#1C2C27] text-teal-950 dark:text-[#F0FDF4] ring-2 ring-emerald-500/40 shadow-sm'
+                      : 'border-slate-200 dark:border-[#253D36] bg-slate-50/70 dark:bg-[#1C2C27]/60 text-slate-700 dark:text-slate-300 hover:border-emerald-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-slate-200 dark:bg-[#15221E] text-slate-700 dark:text-emerald-400">
+                        <Monitor size={15} />
+                      </div>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">System Match</span>
+                    </div>
+                    {theme === 'system' && (
+                      <Check size={14} className="text-emerald-600 dark:text-emerald-400 font-extrabold" />
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-6">
+                    Matches your operating system preference automatically
+                  </span>
+                </button>
+              </div>
+            </div>
+
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-teal-950 uppercase tracking-wider">Startup Workspace</label>
-              <select
+              <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">Startup Workspace</label>
+              <CustomSelect
                 value={defaultWorkspace}
-                onChange={(e) => setDefaultWorkspace(e.target.value)}
-                className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
-              >
-                <option value="personal">Personal Tasks</option>
-                {teams
-                  .filter((t) => t.id !== 'personal')
-                  .map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-              </select>
+                onChange={setDefaultWorkspace}
+                options={[
+                  { value: 'personal', label: 'Personal Tasks' },
+                  ...teams
+                    .filter((t) => t.id !== 'personal')
+                    .map((t) => ({ value: t.id, label: t.name }))
+                ]}
+              />
             </div>
 
             <CompletedWindowControl
@@ -472,27 +572,27 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
               onChange={(newMs) => setPersonalCompletedWindowMs(newMs)}
             />
 
-            <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-[#1C2C27] rounded-xl border border-slate-200 dark:border-[#253D36]">
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-teal-950 flex items-center gap-1.5">
-                  <Bell size={14} className="text-amber-500" />
+                <span className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] flex items-center gap-1.5">
+                  <Bell size={14} className="text-amber-500 dark:text-amber-400" />
                   <span>Task Due Date Notifications</span>
                 </span>
-                <span className="text-[11px] text-slate-500">Receive alerts in the notification center when personal task deadlines approach</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">Receive alerts in the notification center when personal task deadlines approach</span>
               </div>
               <input
                 type="checkbox"
                 checked={personalRemindersEnabled}
                 onChange={(e) => setPersonalRemindersEnabled(e.target.checked)}
-                className="h-4 w-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+                className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer"
               />
             </div>
 
             {personalRemindersEnabled && (
-              <div className="flex flex-col gap-3 pl-4 border-l-2 border-emerald-300">
+              <div className="flex flex-col gap-3 pl-4 border-l-2 border-emerald-300 dark:border-emerald-700">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-slate-600">
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
                       Notify In Advance (minutes)
                     </label>
                     <input
@@ -501,9 +601,9 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
                       step="5"
                       value={personalReminderAdvanceMinutes}
                       onChange={(e) => setPersonalReminderAdvanceMinutes(e.target.value)}
-                      className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                      className="px-3 py-2 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-sm"
                     />
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
                       E.g. 30 for 30m, 60 for 1h, 1440 for 24h
                     </span>
                   </div>
@@ -514,9 +614,9 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
                       id="personalQuietHours"
                       checked={personalQuietHours}
                       onChange={(e) => setPersonalQuietHours(e.target.checked)}
-                      className="h-4 w-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+                      className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer"
                     />
-                    <label htmlFor="personalQuietHours" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                    <label htmlFor="personalQuietHours" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
                       Quiet Hours (hold overnight notifications)
                     </label>
                   </div>
@@ -525,21 +625,21 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
                 {personalQuietHours && (
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-slate-600">Quiet Start</label>
+                      <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet Start</label>
                       <input
                         type="time"
                         value={personalQuietHoursStart}
                         onChange={(e) => setPersonalQuietHoursStart(e.target.value)}
-                        className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                        className="px-3 py-1.5 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-slate-600">Quiet End</label>
+                      <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet End</label>
                       <input
                         type="time"
                         value={personalQuietHoursEnd}
                         onChange={(e) => setPersonalQuietHoursEnd(e.target.value)}
-                        className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                        className="px-3 py-1.5 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs"
                       />
                     </div>
                   </div>
@@ -549,7 +649,7 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
 
             {personalStatus && (
               <div className={`p-3 rounded-xl flex items-center gap-2 text-xs font-semibold ${
-                personalStatus.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+                personalStatus.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
               }`}>
                 {personalStatus.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
                 <span>{personalStatus.message}</span>
@@ -572,39 +672,36 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
 
       {/* Team Settings Card */}
       {currentScope === 'team' && !isPersonal && (
-        <div className="bg-white border border-emerald-100 rounded-2xl p-6 shadow-xs animate-fade-in">
+        <div className="bg-white dark:bg-[#15221E] border border-emerald-100 dark:border-[#213630] rounded-2xl p-6 shadow-xs animate-fade-in transition-colors">
           {availableTeams.length === 0 ? (
             <div className="py-8 text-center flex flex-col items-center justify-center gap-2">
-              <Users size={36} className="text-slate-300 mb-1" />
-              <h3 className="text-base font-extrabold text-teal-950">No Team Workspace Found</h3>
-              <p className="text-xs text-slate-500 max-w-sm">Create or join a team workspace using the top &quot;Teams &amp; Workspaces&quot; menu to configure shared rules.</p>
+              <Users size={36} className="text-slate-300 dark:text-slate-600 mb-1" />
+              <h3 className="text-base font-extrabold text-teal-950 dark:text-[#F0FDF4]">No Team Workspace Found</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">Create or join a team workspace using the top &quot;Teams &amp; Workspaces&quot; menu to configure shared rules.</p>
             </div>
           ) : (
             <>
               {availableTeams.length > 1 && (
-                <div className="mb-5 pb-4 border-b border-slate-100 flex items-center gap-3">
-                  <label className="text-xs font-bold text-teal-950 uppercase tracking-wider">Select Team:</label>
-                  <select
+                <div className="mb-5 pb-4 border-b border-slate-100 dark:border-[#213630] flex items-center gap-3">
+                  <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">Select Team:</label>
+                  <CustomSelect
+                    wrapperClassName="w-48"
                     value={selectedTeamId}
-                    onChange={(e) => setSelectedTeamId(e.target.value)}
-                    className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {availableTeams.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
+                    onChange={setSelectedTeamId}
+                    options={availableTeams.map((t) => ({ value: t.id, label: t.name }))}
+                  />
                 </div>
               )}
 
               <div className="flex items-center justify-between mb-1">
-                <h3 className="text-base font-extrabold text-teal-950">Team Settings: {activeTeam?.name || 'Household'}</h3>
+                <h3 className="text-base font-extrabold text-teal-950 dark:text-[#F0FDF4]">Team Settings: {activeTeam?.name || 'Household'}</h3>
                 {!isTeamCreator && (
-                  <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-800">
                     View Only (Creator controls)
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 mb-5">Configure auto-assign, chore rotation, and reminder alerts for all members.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Configure auto-assign, chore rotation, and reminder alerts for all members.</p>
 
               <TeamPreferencesForm
                 key={activeTeam?.id || 'team-form'}

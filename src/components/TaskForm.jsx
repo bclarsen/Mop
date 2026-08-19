@@ -4,6 +4,8 @@ import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { notifyTaskCreation } from '../utils/notificationService';
 
+import { CustomSelect } from './CustomSelect';
+
 const tasksRef = collection(db, 'tasks');
 
 const FREQUENCIES = [
@@ -101,8 +103,8 @@ function TaskForm({
         frequency,
         priority,
         dueDate: dueDate ? (dueTime ? `${dueDate}T${dueTime}` : dueDate) : null,
-        assignedTo: resolvedAssignee,
         notes: notes.trim(),
+        assignedTo: resolvedAssignee,
       };
 
       try {
@@ -113,59 +115,56 @@ function TaskForm({
           onUpdateTask({ ...editingTask, ...updatedFields });
         }
       } catch (err) {
-        console.warn('Error updating task in Firestore, updating local state:', err);
+        console.warn('Error updating task in Firestore, updating locally:', err);
         if (onUpdateTask) {
           onUpdateTask({ ...editingTask, ...updatedFields });
         }
       }
-
       handleCancel();
       return;
     }
 
-    const newTaskData = {
+    const newTask = {
       name: name.trim(),
       room,
       frequency,
       priority,
       dueDate: dueDate ? (dueTime ? `${dueDate}T${dueTime}` : dueDate) : null,
-      assignedTo: resolvedAssignee,
       notes: notes.trim(),
+      assignedTo: resolvedAssignee,
+      createdAt: Date.now(),
       lastCompleted: null,
       completionHistory: [],
-      workspace: workspace,
-      ownerUid: workspace === 'personal' ? user?.uid : null,
+      workspace,
+      ownerUid: user?.uid || 'guest-user',
     };
 
     try {
       if (!user?.isDemo) {
-        const docRef = await addDoc(tasksRef, newTaskData);
+        const docRef = await addDoc(tasksRef, newTask);
+        const taskWithId = { id: docRef.id, ...newTask };
+        if (onAddTask) {
+          onAddTask(taskWithId);
+        }
         if (workspace !== 'personal' && activeTeam) {
-          await notifyTaskCreation({
-            user,
-            workspace,
-            activeTeam,
-            allAssignees,
-            task: { id: docRef.id, ...newTaskData },
+          notifyTaskCreation({
+            task: taskWithId,
+            team: activeTeam,
+            currentUser: user,
+            assignedUid: resolvedAssignee,
           });
         }
-      } else if (onAddTask) {
-        const demoTaskId = `demo-task-${Date.now()}`;
-        onAddTask({ id: demoTaskId, ...newTaskData });
-        if (workspace !== 'personal' && activeTeam) {
-          await notifyTaskCreation({
-            user,
-            workspace,
-            activeTeam,
-            allAssignees,
-            task: { id: demoTaskId, ...newTaskData },
-          });
+      } else {
+        const demoTask = { id: `demo-task-${Date.now()}`, ...newTask };
+        if (onAddTask) {
+          onAddTask(demoTask);
         }
       }
     } catch (err) {
-      console.warn('Error adding task to Firestore, adding to local state:', err);
+      console.warn('Error adding task to Firestore, adding locally:', err);
+      const fallbackTask = { id: `local-task-${Date.now()}`, ...newTask };
       if (onAddTask) {
-        onAddTask({ id: `demo-task-${Date.now()}`, ...newTaskData });
+        onAddTask(fallbackTask);
       }
     }
 
@@ -173,36 +172,41 @@ function TaskForm({
   };
 
   return (
-    <div className="px-4 md:px-8 pt-6 pb-2">
+    <div className="px-4 md:px-8 pt-5 pb-2">
       {!expanded ? (
         <button
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white text-sm font-bold rounded-2xl shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+          type="button"
+          className="w-full py-3.5 px-5 bg-white dark:bg-[#15221E] hover:bg-emerald-50/70 dark:hover:bg-[#1C2C27] border border-dashed border-emerald-300 dark:border-[#253D36] text-emerald-800 dark:text-emerald-400 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
           onClick={() => setExpanded(true)}
         >
           <Plus size={18} strokeWidth={2.5} />
           <span>Add New Task</span>
         </button>
       ) : (
-        <form onSubmit={handleSubmit} className="bg-white border border-emerald-200/90 rounded-3xl p-5 md:p-6 shadow-md shadow-emerald-950/5 animate-fade-in flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-[#15221E] border border-emerald-200/90 dark:border-[#213630] rounded-3xl p-5 md:p-6 shadow-md shadow-emerald-950/5 animate-fade-in flex flex-col gap-5 transition-colors">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className={`p-2 rounded-xl ${editingTask ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+              <div className={`p-2 rounded-xl ${
+                editingTask
+                  ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+              }`}>
                 {editingTask ? <Pencil size={18} strokeWidth={2.2} /> : <Plus size={18} strokeWidth={2.5} />}
               </div>
               <div>
-                <h3 className="text-base font-extrabold text-teal-950 tracking-tight">
+                <h3 className="text-base font-extrabold text-teal-950 dark:text-[#F0FDF4] tracking-tight">
                   {editingTask ? 'Edit Chore or Task' : 'Create Chore or Task'}
                 </h3>
                 {editingTask && (
-                  <p className="text-xs text-slate-500 font-medium truncate max-w-xs sm:max-w-md">
-                    Modifying: <span className="font-bold text-slate-700">{editingTask.name}</span>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate max-w-xs sm:max-w-md">
+                    Modifying: <span className="font-bold text-slate-700 dark:text-slate-200">{editingTask.name}</span>
                   </p>
                 )}
               </div>
             </div>
             <button
               type="button"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#1C2C27] transition-colors cursor-pointer"
               onClick={handleCancel}
             >
               <X size={18} />
@@ -212,7 +216,7 @@ function TaskForm({
           <div>
             <input
               type="text"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-[#1C2C27] border border-slate-200 dark:border-[#253D36] rounded-xl text-sm font-medium text-slate-900 dark:text-[#F0FDF4] placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-[#111B18] transition-all"
               placeholder="What needs to get done? (e.g. Clean kitchen counters)"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -222,58 +226,46 @@ function TaskForm({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-teal-950 uppercase tracking-wider flex items-center gap-1.5">
-                <Layers size={13} className="text-emerald-600" />
+              <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+                <Layers size={13} className="text-emerald-600 dark:text-emerald-400" />
                 <span>Room / Area</span>
               </label>
-              <select
+              <CustomSelect
                 value={room}
-                onChange={(e) => setRoom(e.target.value)}
-                className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
-              >
-                {rooms.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+                onChange={setRoom}
+                options={rooms.map((r) => ({ value: r, label: r }))}
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-teal-950 uppercase tracking-wider flex items-center gap-1.5">
-                <Clock size={13} className="text-emerald-600" />
+              <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+                <Clock size={13} className="text-emerald-600 dark:text-emerald-400" />
                 <span>Frequency</span>
               </label>
-              <select
+              <CustomSelect
                 value={frequency}
-                onChange={(e) => setFrequency(e.target.value)}
-                className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
-              >
-                {FREQUENCIES.map((f) => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
+                onChange={setFrequency}
+                options={FREQUENCIES}
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-teal-950 uppercase tracking-wider flex items-center gap-1.5">
-                <Flag size={13} className="text-emerald-600" />
+              <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+                <Flag size={13} className="text-emerald-600 dark:text-emerald-400" />
                 <span>Priority</span>
               </label>
-              <select
+              <CustomSelect
                 value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
+                onChange={setPriority}
+                options={PRIORITIES}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-teal-950 uppercase tracking-wider flex items-center gap-1.5">
-                <Calendar size={13} className="text-emerald-600" />
+              <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+                <Calendar size={13} className="text-emerald-600 dark:text-emerald-400" />
                 <span>Due Date</span>
               </label>
               <input
@@ -283,13 +275,13 @@ function TaskForm({
                   setDueDate(e.target.value);
                   if (!e.target.value) setDueTime('');
                 }}
-                className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                className="px-3.5 py-2.5 bg-slate-50 dark:bg-[#1C2C27] border border-slate-200 dark:border-[#253D36] rounded-xl text-sm text-slate-800 dark:text-[#F0FDF4] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-[#111B18]"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-teal-950 uppercase tracking-wider flex items-center gap-1.5">
-                <Clock size={13} className="text-emerald-600" />
+              <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+                <Clock size={13} className="text-emerald-600 dark:text-emerald-400" />
                 <span>Due Time (Optional)</span>
               </label>
               <input
@@ -298,51 +290,48 @@ function TaskForm({
                 value={dueTime}
                 disabled={!dueDate}
                 onChange={(e) => setDueTime(e.target.value)}
-                className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white disabled:opacity-40"
+                className="px-3.5 py-2.5 bg-slate-50 dark:bg-[#1C2C27] border border-slate-200 dark:border-[#253D36] rounded-xl text-sm text-slate-800 dark:text-[#F0FDF4] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-[#111B18] disabled:opacity-40"
               />
             </div>
 
             {workspace !== 'personal' && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-teal-950 uppercase tracking-wider flex items-center gap-1.5">
-                  <User size={13} className="text-emerald-600" />
+                <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+                  <User size={13} className="text-emerald-600 dark:text-emerald-400" />
                   <span>Assign To</span>
                 </label>
-                <select
+                <CustomSelect
                   value={assignedTo}
-                  onChange={(e) => setAssignedTo(e.target.value)}
-                  className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
-                >
-                  <option value="">
-                    {isRotating && rotatedName
-                      ? `Auto: next is ${rotatedName}`
-                      : 'Unassigned'}
-                  </option>
-                  {allAssignees.map((a) => (
-                    <option key={a.uid} value={a.uid}>
-                      {a.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setAssignedTo}
+                  options={[
+                    {
+                      value: '',
+                      label: isRotating && rotatedName
+                        ? `Auto: next is ${rotatedName}`
+                        : 'Unassigned',
+                    },
+                    ...allAssignees.map((a) => ({ value: a.uid, label: a.name })),
+                  ]}
+                />
               </div>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-teal-950 uppercase tracking-wider">Notes & Special Instructions</label>
+            <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">Notes & Special Instructions</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="e.g. Use disinfectant spray under the sink"
-              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+              className="px-3.5 py-2.5 bg-slate-50 dark:bg-[#1C2C27] border border-slate-200 dark:border-[#253D36] rounded-xl text-sm text-slate-800 dark:text-[#F0FDF4] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-[#111B18] transition-all"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-[#213630]">
             <button
               type="button"
-              className="px-4 py-2.5 text-slate-600 hover:text-slate-800 text-xs font-semibold rounded-xl cursor-pointer"
+              className="px-4 py-2.5 text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white text-xs font-semibold rounded-xl cursor-pointer"
               onClick={handleCancel}
             >
               Cancel
@@ -350,7 +339,7 @@ function TaskForm({
             <button
               type="submit"
               disabled={!name.trim()}
-              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1.5"
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1.5"
             >
               {editingTask ? (
                 <>

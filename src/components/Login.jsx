@@ -64,10 +64,15 @@ function Login({ onGuestLogin }) {
             <img
               src="/Mop_Logo.png"
               alt="Mop Logo"
-              className="h-12 w-auto object-contain"
+              className="h-12 w-auto object-contain dark:hidden"
               onError={(e) => {
                 e.currentTarget.src = '/Mop_Icon.png';
               }}
+            />
+            <img
+              src="/mop_icon_dark.png"
+              alt="Mop Logo Dark"
+              className="hidden dark:block h-12 w-auto object-contain rounded-xl scale-110"
             />
             <h1 className="text-3xl font-extrabold text-teal-950 tracking-tight leading-none">Mop</h1>
           </div>

@@ -10,6 +10,7 @@ import {
   getNextDue,
   formatDueDate,
 } from './utils/dateHelpers';
+import { applyTheme } from './utils/theme';
 import { getWorkspaceDocId } from "./utils/workspaceHelpers.js";
 import { useClickOutside } from './hooks/useClickOutside';
 import {
@@ -39,6 +40,7 @@ import Preferences from './components/Preferences';
 import History from './components/History';
 import InviteBanner from './components/InviteBanner';
 import NotificationBanner from './components/NotificationBanner';
+import { CustomSelect } from './components/CustomSelect';
 import { markNotificationRead, deleteNotification } from './utils/notificationService';
 import { SETTINGS_TAB_IDS } from './constants/settings';
 
@@ -397,6 +399,15 @@ function App() {
     };
   }, [user]);
 
+  useEffect(() => {
+    if (user && !user.isDemo && usersMap[user.uid]) {
+      const userTheme = usersMap[user.uid]?.preferences?.theme;
+      if (userTheme) {
+        applyTheme(userTheme);
+      }
+    }
+  }, [user, usersMap]);
+
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
@@ -737,7 +748,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F9F7] flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#F3F9F7] dark:bg-[#0C1311] flex flex-col md:flex-row transition-colors">
       <Sidebar user={user} activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-10">
@@ -779,23 +790,23 @@ function App() {
         ))}
 
         {!SETTINGS_TAB_IDS.includes(activeTab) && (
-          <div className="mx-4 md:mx-8 mt-5 p-5 bg-white border border-emerald-100 rounded-3xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mx-4 md:mx-8 mt-5 p-5 bg-white dark:bg-[#15221E] border border-emerald-100 dark:border-[#213630] rounded-3xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
             <div className="flex flex-col">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600">Active Workspace</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Active Workspace</span>
               <div className="flex items-center gap-2 mt-0.5">
                 {workspace === 'personal' ? (
                   <>
-                    <div className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg">
+                    <div className="p-1.5 bg-emerald-50 dark:bg-[#1C2C27] text-emerald-700 dark:text-emerald-400 rounded-lg">
                       <Home size={18} strokeWidth={2.2} />
                     </div>
-                    <h2 className="text-lg font-extrabold text-teal-950 tracking-tight">Personal Tasks</h2>
+                    <h2 className="text-lg font-extrabold text-teal-950 dark:text-[#F0FDF4] tracking-tight">Personal Tasks</h2>
                   </>
                 ) : (
                   <>
-                    <div className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg">
+                    <div className="p-1.5 bg-emerald-50 dark:bg-[#1C2C27] text-emerald-700 dark:text-emerald-400 rounded-lg">
                       <Users size={18} strokeWidth={2.2} />
                     </div>
-                    <h2 className="text-lg font-extrabold text-teal-950 tracking-tight">
+                    <h2 className="text-lg font-extrabold text-teal-950 dark:text-[#F0FDF4] tracking-tight">
                       {activeTeam?.name || 'Loading Team...'}
                     </h2>
                   </>
@@ -805,19 +816,19 @@ function App() {
 
             {workspace !== 'personal' && allAssignees.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold text-slate-400">Roommates:</span>
+                <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Roommates:</span>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {allAssignees.map((assignee) => (
                     <div
                       key={assignee.uid}
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
                         assignee.isPending
-                          ? 'bg-amber-50 text-amber-800 border-amber-200'
-                          : 'bg-emerald-50/80 text-teal-950 border-emerald-100'
+                          ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                          : 'bg-emerald-50/80 dark:bg-[#1C2C27] text-teal-950 dark:text-[#F0FDF4] border-emerald-100 dark:border-[#253D36]'
                       }`}
                       title={`${assignee.name}${assignee.isPending ? ' (Pending Invite)' : ''}`}
                     >
-                      <div className="h-4 w-4 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-extrabold overflow-hidden">
+                      <div className="h-4 w-4 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[9px] font-extrabold overflow-hidden">
                         {assignee.photoURL ? (
                           <img src={assignee.photoURL} alt="" className="h-full w-full object-cover" />
                         ) : (
@@ -826,7 +837,7 @@ function App() {
                       </div>
                       <span className="truncate max-w-[100px]">{assignee.name}</span>
                       {assignee.isPending && (
-                        <span className="text-[10px] uppercase font-bold text-amber-600 bg-amber-100/70 px-1 rounded">
+                        <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-950 px-1 rounded">
                           Pending
                         </span>
                       )}
@@ -909,10 +920,10 @@ function App() {
               <div className="px-4 md:px-8 py-3 flex items-center gap-3">
                 <div className="relative inline-block" ref={filterMenuRef}>
                   <button
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                       activeFilterCount > 0
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                        : 'bg-white text-slate-700 border-emerald-200 hover:bg-emerald-50'
+                        : 'bg-white dark:bg-[#15221E] text-slate-700 dark:text-[#F0FDF4] border-emerald-200 dark:border-[#253D36] hover:bg-emerald-50 dark:hover:bg-[#1C2C27]'
                     }`}
                     onClick={() => setShowFilterMenu(!showFilterMenu)}
                   >
@@ -927,12 +938,12 @@ function App() {
                   </button>
 
                   {showFilterMenu && (
-                    <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl border border-emerald-100 shadow-xl p-3 z-30 animate-fade-in divide-y divide-slate-100 flex flex-col gap-2">
+                    <div className="absolute left-0 top-full mt-2 w-72 bg-white dark:bg-[#15221E] rounded-2xl border border-emerald-100 dark:border-[#213630] shadow-xl p-3 z-30 animate-fade-in divide-y divide-slate-100 dark:divide-[#213630] flex flex-col gap-2 transition-colors">
                       <div className="flex items-center justify-between pb-2">
-                        <span className="text-xs font-bold text-teal-950 uppercase tracking-wider">Filters</span>
+                        <span className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">Filters</span>
                         {activeFilterCount > 0 && (
                           <button
-                            className="text-[11px] font-bold text-rose-600 hover:underline"
+                            className="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                             onClick={clearAllFilters}
                           >
                             Clear all
@@ -943,110 +954,98 @@ function App() {
                       {/* Date Filter */}
                       <div className="pt-2">
                         <button
-                          className="w-full text-left flex items-center justify-between py-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700"
+                          className="w-full text-left flex items-center justify-between py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer"
                           onClick={() => toggleFilterType('date')}
                         >
                           <span>Date Due</span>
-                          <span className="text-[11px] font-normal text-slate-400">
+                          <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
                             {filterDate !== 'All' ? filterDate : 'All'}
                           </span>
                         </button>
                         {expandedFilterType === 'date' && (
-                          <select
+                          <CustomSelect
+                            wrapperClassName="w-full mt-1.5"
                             value={filterDate}
-                            onChange={(e) => setFilterDate(e.target.value)}
-                            className="w-full mt-1.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                          >
-                            <option value="All">All Dates</option>
-                            {FILTER_DATE_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={setFilterDate}
+                            options={[
+                              { value: 'All', label: 'All Dates' },
+                              ...FILTER_DATE_OPTIONS
+                            ]}
+                          />
                         )}
                       </div>
 
                       {/* Area Filter */}
                       <div className="pt-2">
                         <button
-                          className="w-full text-left flex items-center justify-between py-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700"
+                          className="w-full text-left flex items-center justify-between py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer"
                           onClick={() => toggleFilterType('area')}
                         >
                           <span>Room / Space</span>
-                          <span className="text-[11px] font-normal text-slate-400">
+                          <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
                             {filterRoom !== 'All' ? filterRoom : 'All'}
                           </span>
                         </button>
                         {expandedFilterType === 'area' && (
-                          <select
+                          <CustomSelect
+                            wrapperClassName="w-full mt-1.5"
                             value={filterRoom}
-                            onChange={(e) => setFilterRoom(e.target.value)}
-                            className="w-full mt-1.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                          >
-                            <option value="All">All Rooms</option>
-                            {rooms.map((room) => (
-                              <option key={room} value={room}>
-                                {room}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={setFilterRoom}
+                            options={[
+                              { value: 'All', label: 'All Rooms' },
+                              ...rooms.map((room) => ({ value: room, label: room }))
+                            ]}
+                          />
                         )}
                       </div>
 
                       {/* Assignee Filter */}
                       <div className="pt-2">
                         <button
-                          className="w-full text-left flex items-center justify-between py-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700"
+                          className="w-full text-left flex items-center justify-between py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer"
                           onClick={() => toggleFilterType('assignee')}
                         >
                           <span>Assigned To</span>
-                          <span className="text-[11px] font-normal text-slate-400 truncate max-w-[100px]">
+                          <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500 truncate max-w-[100px]">
                             {filterAssignee !== 'All'
                               ? allAssignees.find((a) => a.uid === filterAssignee)?.name || filterAssignee
                               : 'All'}
                           </span>
                         </button>
                         {expandedFilterType === 'assignee' && (
-                          <select
+                          <CustomSelect
+                            wrapperClassName="w-full mt-1.5"
                             value={filterAssignee}
-                            onChange={(e) => setFilterAssignee(e.target.value)}
-                            className="w-full mt-1.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                          >
-                            <option value="All">All Assignees</option>
-                            {allAssignees.map((a) => (
-                              <option key={a.uid} value={a.uid}>
-                                {a.name}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={setFilterAssignee}
+                            options={[
+                              { value: 'All', label: 'All Assignees' },
+                              ...allAssignees.map((a) => ({ value: a.uid, label: a.name }))
+                            ]}
+                          />
                         )}
                       </div>
 
                       {/* Priority Filter */}
                       <div className="pt-2">
                         <button
-                          className="w-full text-left flex items-center justify-between py-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700"
+                          className="w-full text-left flex items-center justify-between py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 cursor-pointer"
                           onClick={() => toggleFilterType('priority')}
                         >
                           <span>Priority</span>
-                          <span className="text-[11px] font-normal text-slate-400">
+                          <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
                             {filterPriority !== 'All' ? filterPriority : 'All'}
                           </span>
                         </button>
                         {expandedFilterType === 'priority' && (
-                          <select
+                          <CustomSelect
+                            wrapperClassName="w-full mt-1.5"
                             value={filterPriority}
-                            onChange={(e) => setFilterPriority(e.target.value)}
-                            className="w-full mt-1.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                          >
-                            <option value="All">All Priorities</option>
-                            {FILTER_PRIORITIES.map((p) => (
-                              <option key={p.value} value={p.value}>
-                                {p.label}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={setFilterPriority}
+                            options={[
+                              { value: 'All', label: 'All Priorities' },
+                              ...FILTER_PRIORITIES
+                            ]}
+                          />
                         )}
                       </div>
                     </div>
@@ -1055,7 +1054,7 @@ function App() {
 
                 {activeFilterCount > 0 && (
                   <button
-                    className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
                     onClick={clearAllFilters}
                   >
                     <X size={14} />

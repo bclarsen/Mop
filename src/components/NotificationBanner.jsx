@@ -9,24 +9,24 @@ function NotificationBanner({ notification, onNavigateToTask, onDismiss }) {
   const isOverdue = notification.isOverdue;
 
   return (
-    <div className={`mx-4 md:mx-8 mt-3 p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-fade-in ${
+    <div className={`mx-4 md:mx-8 mt-3 p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-fade-in relative z-20 ${
       isDueReminder
         ? isOverdue
-          ? 'bg-amber-50/95 border-amber-300 text-amber-950'
-          : 'bg-emerald-50/95 border-emerald-200 text-teal-950'
+          ? 'bg-amber-50/95 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-100'
+          : 'bg-emerald-50/95 dark:bg-[#15221E] border-emerald-200 dark:border-[#213630] text-teal-950 dark:text-[#F0FDF4]'
         : isAssigned
-        ? 'bg-emerald-50/95 border-emerald-200 text-teal-950'
-        : 'bg-sky-50/95 border-sky-200 text-sky-950'
+        ? 'bg-emerald-50/95 dark:bg-[#15221E] border-emerald-200 dark:border-[#213630] text-teal-950 dark:text-[#F0FDF4]'
+        : 'bg-sky-50/95 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-950 dark:text-sky-100'
     }`}>
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-xl shadow-xs shrink-0 text-white ${
           isDueReminder
             ? isOverdue
-              ? 'bg-amber-600'
-              : 'bg-emerald-600'
+              ? 'bg-amber-600 dark:bg-amber-500'
+              : 'bg-emerald-600 dark:bg-emerald-500'
             : isAssigned
-            ? 'bg-emerald-600'
-            : 'bg-sky-600'
+            ? 'bg-emerald-600 dark:bg-emerald-500'
+            : 'bg-sky-600 dark:bg-sky-500'
         }`}>
           {isDueReminder ? (
             isOverdue ? (
@@ -46,11 +46,11 @@ function NotificationBanner({ notification, onNavigateToTask, onDismiss }) {
             <span className={`text-[11px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded ${
               isDueReminder
                 ? isOverdue
-                  ? 'bg-amber-200/80 text-amber-900'
-                  : 'bg-emerald-200/70 text-emerald-900'
+                  ? 'bg-amber-200/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200'
+                  : 'bg-emerald-200/70 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-200'
                 : isAssigned
-                ? 'bg-emerald-200/70 text-emerald-900'
-                : 'bg-sky-200/70 text-sky-900'
+                ? 'bg-emerald-200/70 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-200'
+                : 'bg-sky-200/70 dark:bg-sky-950 text-sky-900 dark:text-sky-200'
             }`}>
               {isDueReminder
                 ? isOverdue
@@ -61,30 +61,30 @@ function NotificationBanner({ notification, onNavigateToTask, onDismiss }) {
                 : 'Unassigned Task'}
             </span>
             {notification.teamName && (
-              <span className="text-xs text-slate-500 font-medium">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 in {notification.teamName}
               </span>
             )}
           </div>
-          <div className="mt-0.5 text-slate-800">
+          <div className="mt-0.5 text-slate-800 dark:text-slate-200">
             {isDueReminder ? (
               <>
-                <strong className="font-bold text-teal-950">&quot;{notification.taskName}&quot;</strong>
+                <strong className="font-bold text-teal-950 dark:text-[#F0FDF4]">&quot;{notification.taskName}&quot;</strong>
                 {isOverdue ? ' was due ' : ' is due '}
-                <span className={isOverdue ? 'font-bold text-amber-800' : 'font-semibold text-emerald-800'}>
+                <span className={isOverdue ? 'font-bold text-amber-800 dark:text-amber-300' : 'font-semibold text-emerald-800 dark:text-emerald-300'}>
                   {notification.dueDate ? formatDueDate(notification.dueDate) : 'today'}
                 </span>
                 {notification.room && (
-                  <span className="text-xs text-slate-500 ml-1">({notification.room})</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">({notification.room})</span>
                 )}
               </>
             ) : (
               <>
-                <strong className="font-bold text-teal-950">{notification.actorName || 'A teammate'}</strong>
+                <strong className="font-bold text-teal-950 dark:text-[#F0FDF4]">{notification.actorName || 'A teammate'}</strong>
                 {isAssigned ? ' assigned you: ' : ' created unassigned task: '}
-                <strong className="font-bold text-teal-950">&quot;{notification.taskName}&quot;</strong>
+                <strong className="font-bold text-teal-950 dark:text-[#F0FDF4]">&quot;{notification.taskName}&quot;</strong>
                 {notification.room && (
-                  <span className="text-xs text-slate-500 ml-1">({notification.room})</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">({notification.room})</span>
                 )}
               </>
             )}
@@ -113,7 +113,7 @@ function NotificationBanner({ notification, onNavigateToTask, onDismiss }) {
         )}
         <button
           type="button"
-          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white/80 rounded-xl transition-all cursor-pointer"
+          className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/80 dark:hover:bg-[#1C2C27] rounded-xl transition-all cursor-pointer"
           title="Dismiss notification"
           onClick={() => onDismiss(notification.id)}
         >

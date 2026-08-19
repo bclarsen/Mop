@@ -90,12 +90,12 @@ function TaskList({
   if (!tasks || tasks.length === 0) {
     return (
       <div className="px-4 md:px-8 py-12">
-        <div className="text-center py-16 px-4 border border-dashed border-emerald-200 bg-white/70 rounded-3xl">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl inline-flex mb-3">
+        <div className="text-center py-16 px-4 border border-dashed border-emerald-200 dark:border-[#253D36] bg-white/70 dark:bg-[#15221E]/70 rounded-3xl transition-colors">
+          <div className="p-3 bg-emerald-50 dark:bg-[#1C2C27] text-emerald-600 dark:text-emerald-400 rounded-2xl inline-flex mb-3">
             <Sparkles size={28} strokeWidth={1.75} />
           </div>
-          <h3 className="text-base font-bold text-teal-950 mb-1">No chores or tasks found</h3>
-          <p className="text-xs text-slate-500">Add a task above or adjust your filter selection.</p>
+          <h3 className="text-base font-bold text-teal-950 dark:text-[#F0FDF4] mb-1">No chores or tasks found</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Add a task above or adjust your filter selection.</p>
         </div>
       </div>
     );
@@ -113,12 +113,12 @@ function TaskList({
   if (activeTasks.length === 0 && completedTasks.length === 0 && archivedTasks.length > 0) {
     return (
       <div className="px-4 md:px-8 pb-16 flex flex-col gap-6">
-        <div className="text-center py-16 px-4 border border-dashed border-emerald-200 bg-white/70 rounded-3xl">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl inline-flex mb-3">
+        <div className="text-center py-16 px-4 border border-dashed border-emerald-200 dark:border-[#253D36] bg-white/70 dark:bg-[#15221E]/70 rounded-3xl transition-colors">
+          <div className="p-3 bg-emerald-50 dark:bg-[#1C2C27] text-emerald-600 dark:text-emerald-400 rounded-2xl inline-flex mb-3">
             <CheckCircle2 size={28} strokeWidth={2} />
           </div>
-          <h3 className="text-base font-bold text-teal-950 mb-1">All chores completed!</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+          <h3 className="text-base font-bold text-teal-950 dark:text-[#F0FDF4] mb-1">All chores completed!</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-4">
             All chores in this workspace are done. Completed tasks past your {formatDuration(completedWindowMs)} visibility window are archived in History.
           </p>
           {onNavigateTab && (
@@ -141,9 +141,9 @@ function TaskList({
       {/* Active Tasks Section */}
       {activeTasks.length > 0 && (
         <section className="flex flex-col gap-5">
-          <div className="flex items-center gap-2 pb-1 border-b border-emerald-100/80">
-            <ListTodo size={18} className="text-emerald-600" />
-            <h2 className="text-sm font-extrabold text-teal-950 uppercase tracking-wider">
+          <div className="flex items-center gap-2 pb-1 border-b border-emerald-100/80 dark:border-[#213630]">
+            <ListTodo size={18} className="text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-sm font-extrabold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">
               Active Tasks ({activeTasks.length})
             </h2>
           </div>
@@ -151,9 +151,9 @@ function TaskList({
           {Object.entries(groupAndSort(activeTasks)).map(([room, roomTasks]) => (
             <div key={room} className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                   <span>{room}</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-slate-100 text-[10px] text-slate-600 font-extrabold">
+                  <span className="px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-[#1C2C27] text-[10px] text-slate-600 dark:text-slate-300 font-extrabold">
                     {roomTasks.length}
                   </span>
                 </span>
@@ -179,16 +179,16 @@ function TaskList({
       {/* Recently Completed Tasks Section (Faded) */}
       {completedTasks.length > 0 && (
         <section className="flex flex-col gap-5 pt-4">
-          <div className="flex items-center gap-2 pb-1 border-b border-slate-200">
-            <CheckCircle2 size={18} className="text-emerald-500" />
-            <h2 className="text-sm font-extrabold text-slate-500 uppercase tracking-wider">
+          <div className="flex items-center gap-2 pb-1 border-b border-slate-200 dark:border-[#213630]">
+            <CheckCircle2 size={18} className="text-emerald-500 dark:text-emerald-400" />
+            <h2 className="text-sm font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Completed Tasks ({completedTasks.length})
             </h2>
           </div>
 
           {Object.entries(groupAndSort(completedTasks)).map(([room, roomTasks]) => (
             <div key={room} className="flex flex-col gap-2.5">
-              <span className="text-xs font-bold text-slate-400">
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-400">
                 {room} ({roomTasks.length})
               </span>
               <div className="grid grid-cols-1 gap-2.5">
@@ -211,18 +211,18 @@ function TaskList({
 
       {/* Archived Notice when older completed tasks are hidden by preference */}
       {archivedTasks.length > 0 && (
-        <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-slate-500">
+        <div className="p-3.5 bg-slate-50 dark:bg-[#15221E] border border-slate-200/80 dark:border-[#213630] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-slate-500 dark:text-slate-400 transition-colors">
           <div className="flex items-center gap-2">
             <Archive size={15} className="text-slate-400 shrink-0" />
             <span>
-              <strong className="text-slate-700 font-semibold">{archivedTasks.length}</strong> completed {archivedTasks.length === 1 ? 'task is' : 'tasks are'} archived beyond your visibility setting ({formatDuration(completedWindowMs)}).
+              <strong className="text-slate-700 dark:text-slate-200 font-semibold">{archivedTasks.length}</strong> completed {archivedTasks.length === 1 ? 'task is' : 'tasks are'} archived beyond your visibility setting ({formatDuration(completedWindowMs)}).
             </span>
           </div>
           {onNavigateTab && (
             <button
               type="button"
               onClick={() => onNavigateTab('history')}
-              className="inline-flex items-center gap-1 font-bold text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer shrink-0 self-start sm:self-auto"
+              className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:underline cursor-pointer shrink-0 self-start sm:self-auto"
             >
               <span>View History Log</span>
               <ArrowRight size={13} />
@@ -235,4 +235,3 @@ function TaskList({
 }
 
 export default TaskList;
-

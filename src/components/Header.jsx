@@ -214,14 +214,14 @@ function Header({
   };
 
   return (
-    <div ref={containerRef} className="relative z-30">
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-emerald-100/90 px-4 md:px-8 py-3.5 flex items-center justify-between transition-all">
+    <div ref={containerRef} className="relative z-40">
+      <header className="sticky top-0 z-40 bg-white/90 dark:bg-[#15221E]/95 backdrop-blur-md border-b border-emerald-100/90 dark:border-[#213630] px-4 md:px-8 py-3.5 flex items-center justify-between transition-colors">
         <div className="flex items-center gap-3">
           <button
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-emerald-200 text-teal-950 hover:bg-emerald-50 text-xs md:text-sm font-semibold shadow-xs transition-all hover:border-emerald-300 active:scale-95"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#1C2C27] border border-emerald-200 dark:border-[#253D36] text-teal-950 dark:text-[#F0FDF4] hover:bg-emerald-50 dark:hover:bg-[#233832] text-xs md:text-sm font-semibold shadow-xs transition-all hover:border-emerald-300 dark:hover:border-emerald-500/40 active:scale-95 cursor-pointer"
             onClick={() => setShowInvite(!showInvite)}
           >
-            <Users size={15} className="text-emerald-600" />
+            <Users size={15} className="text-emerald-600 dark:text-emerald-400" />
             <span>Teams & Workspaces</span>
           </button>
         </div>
@@ -230,7 +230,7 @@ function Header({
           {/* Notifications Bell */}
           <div className="relative shrink-0 z-50" ref={notifMenuRef}>
             <button
-              className="relative p-2 rounded-xl text-slate-500 hover:text-teal-950 hover:bg-emerald-50/80 transition-all active:scale-95 cursor-pointer"
+              className="relative p-2 rounded-xl text-slate-500 dark:text-emerald-100/70 hover:text-teal-950 dark:hover:text-[#F0FDF4] hover:bg-emerald-50/80 dark:hover:bg-[#1C2C27] transition-all active:scale-95 cursor-pointer"
               onClick={() => {
                 setShowNotifMenu(!showNotifMenu);
                 setShowSettingsMenu(false);
@@ -239,19 +239,19 @@ function Header({
             >
               <Bell size={20} strokeWidth={2} />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-extrabold text-white shadow-xs">
+                <span className="absolute top-1 right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-emerald-600 dark:bg-emerald-500 text-[10px] font-extrabold text-white shadow-xs">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
 
             {showNotifMenu && (
-              <div className="absolute right-0 top-full mt-2 w-80 md:w-96 bg-white rounded-2xl border border-emerald-100 shadow-xl py-2 z-50 overflow-hidden animate-fade-in divide-y divide-slate-100">
+              <div className="absolute right-0 top-full mt-2 w-80 md:w-96 bg-white dark:bg-[#15221E] rounded-2xl border border-emerald-100 dark:border-[#213630] shadow-2xl py-2 z-50 overflow-hidden animate-fade-in divide-y divide-slate-100 dark:divide-[#213630]">
                 <div className="px-4 py-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-extrabold text-teal-950">Notifications</span>
+                    <span className="text-sm font-extrabold text-teal-950 dark:text-[#F0FDF4]">Notifications</span>
                     {unreadCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200 dark:border-emerald-800/60">
                         {unreadCount} new
                       </span>
                     )}
@@ -260,7 +260,7 @@ function Header({
                     <button
                       type="button"
                       onClick={() => onMarkAllNotificationsAsRead()}
-                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer"
+                      className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <CheckCheck size={13} />
                       <span>Mark all as read</span>
@@ -268,12 +268,12 @@ function Header({
                   )}
                 </div>
 
-                <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-[#213630]">
                   {notifications.length === 0 ? (
-                    <div className="py-8 px-4 text-center flex flex-col items-center justify-center gap-2 text-slate-400">
-                      <Bell size={28} strokeWidth={1.5} className="text-slate-300" />
-                      <p className="text-xs font-semibold text-slate-600">No notifications yet</p>
-                      <p className="text-[11px] text-slate-400">You will be notified about task assignments and due dates.</p>
+                    <div className="py-8 px-4 text-center flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500">
+                      <Bell size={28} strokeWidth={1.5} className="text-slate-300 dark:text-slate-600" />
+                      <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">No notifications yet</p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500">You will be notified about task assignments and due dates.</p>
                     </div>
                   ) : (
                     notifications.map((notif) => {
@@ -284,12 +284,12 @@ function Header({
                       return (
                         <div
                           key={notif.id}
-                          className={`p-3.5 flex items-start justify-between gap-3 transition-colors hover:bg-slate-50 cursor-pointer ${
+                          className={`p-3.5 flex items-start justify-between gap-3 transition-colors hover:bg-slate-50 dark:hover:bg-[#1C2C27] cursor-pointer ${
                             !notif.read
                               ? isDueReminder && isOverdue
-                                ? 'bg-amber-50/60'
-                                : 'bg-emerald-50/40'
-                              : 'bg-white'
+                                ? 'bg-amber-50/60 dark:bg-amber-950/25'
+                                : 'bg-emerald-50/40 dark:bg-emerald-950/20'
+                              : 'bg-white dark:bg-[#15221E]'
                           }`}
                           onClick={() => {
                             if (onMarkNotificationRead) onMarkNotificationRead(notif.id);
@@ -304,11 +304,11 @@ function Header({
                             <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
                               isDueReminder
                                 ? isOverdue
-                                  ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-emerald-100 text-emerald-700'
+                                  ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300'
+                                  : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
                                 : isAssigned
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-sky-100 text-sky-700'
+                                ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300'
                             }`}>
                               {isDueReminder ? (
                                 isOverdue ? (
@@ -327,27 +327,29 @@ function Header({
                                 <>
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className={`text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.2 rounded ${
-                                      isOverdue ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'
+                                      isOverdue
+                                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200'
+                                        : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-200'
                                     }`}>
                                       {isOverdue ? 'Overdue' : 'Due Reminder'}
                                     </span>
                                   </div>
-                                  <span className="text-xs text-slate-800 leading-snug mt-0.5">
-                                    <strong className="font-bold text-teal-950">&quot;{notif.taskName}&quot;</strong>
+                                  <span className="text-xs text-slate-800 dark:text-slate-200 leading-snug mt-0.5">
+                                    <strong className="font-bold text-teal-950 dark:text-[#F0FDF4]">&quot;{notif.taskName}&quot;</strong>
                                     {isOverdue ? ' was due ' : ' is due '}
-                                    <span className={isOverdue ? 'font-bold text-amber-800' : 'font-medium text-slate-700'}>
+                                    <span className={isOverdue ? 'font-bold text-amber-800 dark:text-amber-300' : 'font-medium text-slate-700 dark:text-slate-300'}>
                                       {notif.dueDate ? formatDueDate(notif.dueDate) : 'today'}
                                     </span>
                                   </span>
                                 </>
                               ) : (
-                                <span className="text-xs text-slate-800 leading-snug">
-                                  <strong className="font-bold text-teal-950">{notif.actorName || 'Teammate'}</strong>
+                                <span className="text-xs text-slate-800 dark:text-slate-200 leading-snug">
+                                  <strong className="font-bold text-teal-950 dark:text-[#F0FDF4]">{notif.actorName || 'Teammate'}</strong>
                                   {isAssigned ? ' assigned you ' : ' added unassigned task '}
-                                  <strong className="font-bold text-teal-950">&quot;{notif.taskName}&quot;</strong>
+                                  <strong className="font-bold text-teal-950 dark:text-[#F0FDF4]">&quot;{notif.taskName}&quot;</strong>
                                 </span>
                               )}
-                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1">
+                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-400 mt-1">
                                 <span>{notif.teamName || 'Team'}</span>
                                 {notif.room && (
                                   <>
@@ -362,7 +364,7 @@ function Header({
                           <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                             {!notif.read && (
                               <span
-                                className={`h-2 w-2 rounded-full ${isDueReminder && isOverdue ? 'bg-amber-600' : 'bg-emerald-600'}`}
+                                className={`h-2 w-2 rounded-full ${isDueReminder && isOverdue ? 'bg-amber-600 dark:bg-amber-400' : 'bg-emerald-600 dark:bg-emerald-400'}`}
                                 title="Unread"
                               />
                             )}
@@ -370,7 +372,7 @@ function Header({
                               <button
                                 type="button"
                                 onClick={() => onDeleteNotification(notif.id)}
-                                className="p-1 text-slate-300 hover:text-rose-600 rounded transition-colors cursor-pointer"
+                                className="p-1 text-slate-300 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors cursor-pointer"
                                 title="Remove notification"
                               >
                                 <Trash2 size={13} />
@@ -388,7 +390,7 @@ function Header({
 
           <div className="relative shrink-0 z-50" ref={settingsMenuRef}>
             <button
-              className="p-2 rounded-xl text-slate-500 hover:text-teal-950 hover:bg-emerald-50/80 transition-all active:scale-95"
+              className="p-2 rounded-xl text-slate-500 dark:text-emerald-100/70 hover:text-teal-950 dark:hover:text-[#F0FDF4] hover:bg-emerald-50/80 dark:hover:bg-[#1C2C27] transition-all active:scale-95 cursor-pointer"
               onClick={() => {
                 setShowSettingsMenu(!showSettingsMenu);
                 setShowNotifMenu(false);
@@ -399,12 +401,12 @@ function Header({
             </button>
 
             {showSettingsMenu && (
-              <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl border border-emerald-100 shadow-xl py-1.5 z-50 overflow-hidden animate-fade-in divide-y divide-slate-100">
+              <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-[#15221E] rounded-2xl border border-emerald-100 dark:border-[#213630] shadow-2xl py-1.5 z-50 overflow-hidden animate-fade-in divide-y divide-slate-100 dark:divide-[#213630]">
                 <div className="py-1">
                   {SETTINGS_PAGES.map(({ id, label }) => (
                     <button
                       key={id}
-                      className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors flex items-center justify-between"
+                      className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-[#1C2C27] hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors flex items-center justify-between cursor-pointer"
                       onClick={() => {
                         setActiveTab(id);
                         setShowSettingsMenu(false);
@@ -417,7 +419,7 @@ function Header({
                 <div className="py-1">
                   <button
                     onClick={handleSignOut}
-                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-2"
+                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors flex items-center gap-2 cursor-pointer"
                   >
                     <LogOut size={16} />
                     <span>Sign Out</span>
@@ -431,19 +433,19 @@ function Header({
 
       {/* Teams Dropdown Drawer / Panel */}
       {showInvite && (
-        <div className="relative z-10 mx-4 md:mx-8 my-4 p-5 bg-white border border-emerald-200/90 rounded-2xl shadow-md animate-fade-in">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-emerald-100">
+        <div className="relative z-10 mx-4 md:mx-8 my-4 p-5 bg-white dark:bg-[#15221E] border border-emerald-200/90 dark:border-[#213630] rounded-2xl shadow-md animate-fade-in">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-emerald-100 dark:border-[#213630]">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">Workspaces:</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mr-1">Workspaces:</span>
               {teams.map((team) => {
                 const isActive = workspace === team.id;
                 return (
                   <button
                     key={team.id}
-                    className={`px-3.5 py-1.5 rounded-full text-xs md:text-sm font-semibold transition-all ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs md:text-sm font-semibold transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'bg-emerald-50/70 text-teal-900 hover:bg-emerald-100 border border-emerald-200/60'
+                        ? 'bg-emerald-600 dark:bg-emerald-500 text-white shadow-xs'
+                        : 'bg-emerald-50/70 dark:bg-[#1C2C27] text-teal-900 dark:text-emerald-100 hover:bg-emerald-100 dark:hover:bg-[#233832] border border-emerald-200/60 dark:border-[#253D36]'
                     }`}
                     onClick={() => handleWorkspaceChange(team.id)}
                   >
@@ -454,7 +456,7 @@ function Header({
 
               {teams.length < 5 && !isNamingTeam && (
                 <button
-                  className="p-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-emerald-100 hover:text-emerald-800 transition-colors"
+                  className="p-1.5 rounded-full bg-slate-100 dark:bg-[#1C2C27] text-slate-600 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-[#233832] hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors cursor-pointer"
                   onClick={() => setIsNamingTeam(true)}
                   title="Create new household team"
                 >
@@ -466,16 +468,16 @@ function Header({
             {workspace !== 'personal' && (
               <div className="relative shrink-0 self-start md:self-auto" ref={manageMenuRef}>
                 <button
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#253D36] text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1C2C27] transition-colors cursor-pointer"
                   onClick={() => setShowManageMenu(!showManageMenu)}
                 >
                   <span>Team Options</span>
                 </button>
 
                 {showManageMenu && (
-                  <div className="absolute right-0 top-full mt-1.5 w-44 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-30 divide-y divide-slate-100 animate-fade-in">
+                  <div className="absolute right-0 top-full mt-1.5 w-44 bg-white dark:bg-[#15221E] rounded-xl border border-slate-200 dark:border-[#213630] shadow-xl py-1 z-30 divide-y divide-slate-100 dark:divide-[#213630] animate-fade-in">
                     <button
-                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 transition-colors"
+                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-[#1C2C27] hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors cursor-pointer"
                       onClick={() => {
                         setShowAddMembers(true);
                         setShowManageMenu(false);
@@ -485,14 +487,14 @@ function Header({
                     </button>
                     {isCreator ? (
                       <button
-                        className="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+                        className="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                         onClick={handleDeleteTeam}
                       >
                         Delete Team
                       </button>
                     ) : (
                       <button
-                        className="w-full text-left px-3.5 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition-colors"
+                        className="w-full text-left px-3.5 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
                         onClick={handleLeaveTeam}
                       >
                         Leave Team
@@ -505,24 +507,24 @@ function Header({
           </div>
 
           {isNamingTeam && (
-            <div className="mt-4 flex flex-wrap items-center gap-2 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+            <div className="mt-4 flex flex-wrap items-center gap-2 bg-emerald-50/50 dark:bg-[#1C2C27]/60 p-3 rounded-xl border border-emerald-100 dark:border-[#213630]">
               <input
                 type="text"
                 placeholder="Team Name (e.g. Apartment 4B)"
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
-                className="flex-1 min-w-[200px] px-3 py-2 bg-white border border-emerald-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="flex-1 min-w-[200px] px-3 py-2 bg-white dark:bg-[#111B18] border border-emerald-200 dark:border-[#253D36] rounded-lg text-sm text-slate-800 dark:text-[#F0FDF4] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 autoFocus
               />
               <button
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-all"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer"
                 onClick={handleAddTeam}
                 disabled={!newTeamName.trim()}
               >
                 Create Team
               </button>
               <button
-                className="px-3 py-2 text-slate-500 hover:text-slate-700 text-xs font-semibold"
+                className="px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs font-semibold cursor-pointer"
                 onClick={handleCancelAddTeam}
               >
                 Cancel
@@ -531,9 +533,9 @@ function Header({
           )}
 
           {showAddMembers && workspace !== 'personal' && (
-            <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-4">
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-[#213630] flex flex-col gap-4">
               <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Current Members:</h4>
+                <h4 className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-2">Current Members:</h4>
                 <div className="flex flex-wrap gap-2">
                   {(currentTeam?.members || []).map((uid) => {
                     const member = usersMap[uid];
@@ -541,12 +543,12 @@ function Header({
                     return (
                       <div
                         key={uid}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-[#1C2C27] text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-[#253D36]"
                       >
                         <span>{member?.displayName || (isSelf ? `${user?.displayName || 'You'}` : uid)}</span>
                         {isCreator && !isSelf && (
                           <button
-                            className="p-0.5 text-slate-400 hover:text-rose-600 transition-colors"
+                            className="p-0.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                             title="Remove member"
                             onClick={() => handleRemoveMember(uid)}
                           >
@@ -559,8 +561,8 @@ function Header({
                 </div>
               </div>
 
-              <div className="bg-emerald-50/60 p-3.5 rounded-xl border border-emerald-100">
-                <div className="flex items-center gap-2 mb-2 text-xs font-bold text-teal-900">
+              <div className="bg-emerald-50/60 dark:bg-[#1C2C27] p-3.5 rounded-xl border border-emerald-100 dark:border-[#253D36]">
+                <div className="flex items-center gap-2 mb-2 text-xs font-bold text-teal-900 dark:text-emerald-300">
                   <UserPlus size={15} />
                   <span>Invite a Roommate via Email</span>
                 </div>
@@ -570,16 +572,16 @@ function Header({
                     placeholder="roommate@example.com"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    className="flex-1 min-w-[220px] px-3 py-2 bg-white border border-emerald-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="flex-1 min-w-[220px] px-3 py-2 bg-white dark:bg-[#111B18] border border-emerald-200 dark:border-[#253D36] rounded-lg text-sm text-slate-800 dark:text-[#F0FDF4] focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-all"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer"
                     onClick={handleInvite}
                   >
                     Send Invite
                   </button>
                   <button
-                    className="px-3 py-2 text-slate-500 hover:text-slate-700 text-xs font-semibold"
+                    className="px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs font-semibold cursor-pointer"
                     onClick={handleCancelInvite}
                   >
                     Close
@@ -587,7 +589,7 @@ function Header({
                 </div>
                 {inviteStatus && (
                   <div className={`mt-2 flex items-center gap-1.5 text-xs font-medium ${
-                    inviteStatus.type === 'success' ? 'text-emerald-700' : 'text-rose-600'
+                    inviteStatus.type === 'success' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                   }`}>
                     {inviteStatus.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
                     <span>{inviteStatus.message}</span>
