@@ -30,7 +30,9 @@ function Inventory({ user, workspace }) {
 
   useEffect(() => {
     if (!user || user.isDemo || !workspace) return;
-    const q = query(inventoryRef, where('workspace', '==', workspace));
+    const q = workspace === 'personal'
+      ? query(inventoryRef, where('workspace', '==', 'personal'), where('addedBy', '==', user.uid))
+      : query(inventoryRef, where('workspace', '==', workspace));
     const unsub = onSnapshot(
       q,
       (snapshot) => {

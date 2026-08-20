@@ -1,8 +1,9 @@
-import { BarChart3, ClipboardList, Home, Package } from 'lucide-react';
+import { BarChart3, ClipboardList, Home, Package, ListTodo } from 'lucide-react';
 import { SETTINGS_TAB_IDS } from '../constants/settings';
 
 const NAV_ITEMS = [
     { id: 'tasks', label: 'Tasks', Icon: ClipboardList },
+    { id: 'routines', label: 'Routines', Icon: ListTodo },
     { id: 'inventory', label: 'Inventory', Icon: Package },
     { id: 'living-space', label: 'Living Space', Icon: Home },
     { id: 'stats', label: 'Stats', Icon: BarChart3 },

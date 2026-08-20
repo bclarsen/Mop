@@ -38,6 +38,7 @@ import Sidebar from './components/Sidebar';
 import UserProfile from './components/UserProfile';
 import Preferences from './components/Preferences';
 import History from './components/History';
+import Routines from './components/Routines';
 import InviteBanner from './components/InviteBanner';
 import NotificationBanner from './components/NotificationBanner';
 import { CustomSelect } from './components/CustomSelect';
@@ -47,6 +48,7 @@ import { SETTINGS_TAB_IDS } from './constants/settings';
 const tasksRef = collection(db, 'tasks');
 const invitesRef = collection(db, 'teamInvites');
 const teamsRef = collection(db, 'teams');
+const routinesRef = collection(db, 'routines');
 
 const DEFAULT_ROOMS = ['Kitchen', 'Bathroom', 'Living Room', 'Bedroom', 'Other'];
 const FILTER_PRIORITIES = [
@@ -139,6 +141,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
   const [tasks, setTasks] = useState([]);
+  const [routines, setRoutines] = useState([]);
   const [workspaceInvites, setWorkspaceInvites] = useState([]);
   const [filterRoom, setFilterRoom] = useState('All');
   const [filterPriority, setFilterPriority] = useState('All');
@@ -278,6 +281,20 @@ function App() {
       q,
       (snapshot) => setTasks(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))),
       (err) => console.warn('Note: tasks snapshot fallback:', err?.code || err),
+    );
+    return unsub;
+  }, [user, workspace]);
+
+  useEffect(() => {
+    if (!user || user.isDemo || !workspace) return;
+    const q = workspace === 'personal'
+      ? query(routinesRef, where('workspace', '==', 'personal'), where('ownerUid', '==', user.uid))
+      : query(routinesRef, where('workspace', '==', workspace));
+
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => setRoutines(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      (err) => console.warn('Note: routines snapshot fallback:', err?.code || err),
     );
     return unsub;
   }, [user, workspace]);
@@ -900,6 +917,17 @@ function App() {
             <History user={user} workspace={workspace} tasks={tasks} />
           )}
 
+          {activeTab === 'routines' && (
+            <Routines
+              user={user}
+              workspace={workspace}
+              rooms={rooms}
+              allAssignees={allAssignees}
+              routines={routines}
+              activeTeam={activeTeam}
+            />
+          )}
+
           {activeTab === 'tasks' && (
             <>
               <TaskForm
@@ -911,6 +939,7 @@ function App() {
                 rooms={rooms}
                 autoAssign={activeTeam?.preferences?.autoAssign}
                 tasks={tasks}
+                routines={routines}
                 editingTask={editingTask}
                 onAddTask={handleAddTask}
                 onUpdateTask={handleUpdateTask}

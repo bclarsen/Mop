@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Plus, X, Calendar, Clock, User, Layers, Flag, Pencil, Check } from 'lucide-react';
+import { Plus, X, Calendar, Clock, User, Layers, Flag, Pencil, Check, ListTodo, ChevronDown } from 'lucide-react';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { notifyTaskCreation } from '../utils/notificationService';
+import { useClickOutside } from '../hooks/useClickOutside';
 
 import { CustomSelect } from './CustomSelect';
 
@@ -38,6 +39,7 @@ function TaskForm({
   rooms = ['Kitchen', 'Bathroom', 'Living Room', 'Bedroom', 'Other'],
   autoAssign = 'manual',
   tasks = [],
+  routines = [],
   editingTask = null,
   onAddTask,
   onUpdateTask,
@@ -65,6 +67,69 @@ function TaskForm({
       : '',
   );
 
+  const [showRoutinesDropdown, setShowRoutinesDropdown] = useState(false);
+  const routinesDropdownRef = useClickOutside(() => setShowRoutinesDropdown(false));
+
+  const isRotating = workspace !== 'personal' && autoAssign === 'rotate';
+  const rotatedAssignee = isRotating
+    ? pickRotatedAssignee(allAssignees, tasks)
+    : '';
+  const rotatedName = allAssignees.find((a) => a.uid === rotatedAssignee)?.name;
+
+  const handleAddFromRoutine = async (routine) => {
+    setShowRoutinesDropdown(false);
+    if (!routine || !routine.tasks || routine.tasks.length === 0) return;
+    
+    // Add each task in the routine
+    for (const t of routine.tasks) {
+      let resolvedAssignee = t.assignedTo || '';
+      if (workspace === 'personal') {
+        resolvedAssignee = user?.uid;
+      } else if (isRotating && !t.assignedTo) {
+        resolvedAssignee = rotatedAssignee;
+      }
+
+      const newTask = {
+        name: t.name,
+        room: t.room || rooms[0] || 'Kitchen',
+        frequency: t.frequency || 'weekly',
+        priority: t.priority || 'medium',
+        dueDate: null, // routines don't save specific due dates
+        notes: t.notes || '',
+        assignedTo: resolvedAssignee,
+        // eslint-disable-next-line react-hooks/purity
+        createdAt: Date.now(),
+        lastCompleted: null,
+        completionHistory: [],
+        workspace,
+        ownerUid: user?.uid || 'guest-user',
+      };
+
+      try {
+        if (!user?.isDemo) {
+          const docRef = await addDoc(tasksRef, newTask);
+          const taskWithId = { id: docRef.id, ...newTask };
+          if (onAddTask) {
+            onAddTask(taskWithId);
+          }
+        } else {
+          // eslint-disable-next-line react-hooks/purity
+          const demoTask = { id: `demo-task-${Date.now()}-${Math.random()}`, ...newTask };
+          if (onAddTask) {
+            onAddTask(demoTask);
+          }
+        }
+      } catch (err) {
+        console.warn('Error adding routine task to Firestore, adding locally:', err);
+        // eslint-disable-next-line react-hooks/purity
+        const fallbackTask = { id: `local-task-${Date.now()}-${Math.random()}`, ...newTask };
+        if (onAddTask) {
+          onAddTask(fallbackTask);
+        }
+      }
+    }
+  };
+
   const handleCancel = () => {
     setName('');
     setNotes('');
@@ -76,12 +141,6 @@ function TaskForm({
       onCancelEdit();
     }
   };
-
-  const isRotating = workspace !== 'personal' && autoAssign === 'rotate';
-  const rotatedAssignee = isRotating
-    ? pickRotatedAssignee(allAssignees, tasks)
-    : '';
-  const rotatedName = allAssignees.find((a) => a.uid === rotatedAssignee)?.name;
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -132,7 +191,8 @@ function TaskForm({
       dueDate: dueDate ? (dueTime ? `${dueDate}T${dueTime}` : dueDate) : null,
       notes: notes.trim(),
       assignedTo: resolvedAssignee,
-      createdAt: Date.now(),
+       
+        createdAt: Date.now(),
       lastCompleted: null,
       completionHistory: [],
       workspace,
@@ -175,14 +235,51 @@ function TaskForm({
   return (
     <div className="px-4 md:px-8 pt-5 pb-2">
       {!expanded ? (
-        <button
-          type="button"
-          className="w-full py-3.5 px-5 bg-white dark:bg-[#15221E] hover:bg-emerald-50/70 dark:hover:bg-[#1C2C27] border border-dashed border-emerald-300 dark:border-[#253D36] text-emerald-800 dark:text-emerald-400 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
-          onClick={() => setExpanded(true)}
-        >
-          <Plus size={18} strokeWidth={2.5} />
-          <span>Add New Task</span>
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            className="flex-1 py-3.5 px-5 bg-white dark:bg-[#15221E] hover:bg-emerald-50/70 dark:hover:bg-[#1C2C27] border border-dashed border-emerald-300 dark:border-[#253D36] text-emerald-800 dark:text-emerald-400 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+            onClick={() => setExpanded(true)}
+          >
+            <Plus size={18} strokeWidth={2.5} />
+            <span>Add New Task</span>
+          </button>
+          
+          <div className="relative flex-1 sm:max-w-[240px]" ref={routinesDropdownRef}>
+            <button
+              type="button"
+              className="w-full h-full py-3.5 px-5 bg-white dark:bg-[#15221E] hover:bg-emerald-50/70 dark:hover:bg-[#1C2C27] border border-dashed border-emerald-300 dark:border-[#253D36] text-emerald-800 dark:text-emerald-400 font-bold text-sm rounded-2xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+              onClick={() => setShowRoutinesDropdown(!showRoutinesDropdown)}
+            >
+              <ListTodo size={18} strokeWidth={2.5} />
+              <span>Add from Routine</span>
+              <ChevronDown size={14} className={`ml-1 transition-transform ${showRoutinesDropdown ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {showRoutinesDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#15221E] border border-emerald-100 dark:border-[#213630] rounded-xl shadow-lg z-50 overflow-hidden py-1 max-h-64 overflow-y-auto">
+                {routines.length > 0 ? (
+                  routines.map(routine => (
+                    <button
+                      key={routine.id}
+                      onClick={() => handleAddFromRoutine(routine)}
+                      className="w-full text-left px-4 py-2.5 text-sm font-semibold text-teal-950 dark:text-[#F0FDF4] hover:bg-emerald-50 dark:hover:bg-[#1C2C27] transition-colors flex flex-col cursor-pointer"
+                    >
+                      <span>{routine.name}</span>
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        {routine.tasks?.length || 0} tasks
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-sm text-slate-500 text-center">
+                    No routines created yet. Create one in the Routines tab.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className="bg-white dark:bg-[#15221E] border border-emerald-200/90 dark:border-[#213630] rounded-3xl p-5 md:p-6 shadow-md shadow-emerald-950/5 animate-fade-in flex flex-col gap-5 transition-colors">
           <div className="flex items-center justify-between">

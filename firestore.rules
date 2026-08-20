@@ -100,6 +100,24 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────
+    // ROUTINES
+    // ─────────────────────────────
+    match /routines/{routineId} {
+      allow read, update, delete: if request.auth != null &&
+        (
+          (resource.data.workspace == 'personal' && resource.data.ownerUid == request.auth.uid) ||
+          (resource.data.workspace != 'personal' &&
+            request.auth.uid in get(/databases/$(database)/documents/teams/$(resource.data.workspace)).data.members)
+        );
+      allow create: if request.auth != null &&
+        (
+          (request.resource.data.workspace == 'personal' && request.resource.data.ownerUid == request.auth.uid) ||
+          (request.resource.data.workspace != 'personal' &&
+            request.auth.uid in get(/databases/$(database)/documents/teams/$(request.resource.data.workspace)).data.members)
+      );
+    }
+    
+    // ─────────────────────────────
     // TASK HISTORY — one permanent record per completion. These records remain
     // after a task is deleted, so the History page is a complete workspace log.
     // ─────────────────────────────
@@ -126,8 +144,14 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read, update, delete: if request.auth != null &&
         resource.data.recipientUid == request.auth.uid;
-      allow create: if request.auth != null &&
-        request.resource.data.actorUid == request.auth.uid;
+      allow create: if request.auth != null;
+    }
+
+    // ─────────────────────────────
+    // MAIL — email queue for Firebase extensions
+    // ─────────────────────────────
+    match /mail/{mailId} {
+      allow create, read, update, delete: if request.auth != null;
     }
   }
 }

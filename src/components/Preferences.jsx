@@ -33,17 +33,29 @@ function CompletedWindowControl({
   onChange,
   disabled = false,
   idPrefix = 'pref',
+  includeTeamMatch = false,
 }) {
+  const isMatchTeam = value === 'match_team' || value === null || value === undefined || value === '';
   const isPreset = COMPLETED_WINDOW_OPTIONS.some((opt) => opt.value === value);
-  const [mode, setMode] = useState(() => (isPreset ? String(value) : 'custom'));
 
-  const initialParts = msToParts(value || DEFAULT_COMPLETED_WINDOW_MS);
+  const getInitialMode = () => {
+    if (includeTeamMatch && isMatchTeam) return 'match_team';
+    if (isPreset) return String(value);
+    if (value && typeof value === 'number') return 'custom';
+    return includeTeamMatch ? 'match_team' : String(DEFAULT_COMPLETED_WINDOW_MS);
+  };
+
+  const [mode, setMode] = useState(getInitialMode);
+
+  const initialParts = msToParts(typeof value === 'number' && value > 0 ? value : DEFAULT_COMPLETED_WINDOW_MS);
   const [customHours, setCustomHours] = useState(() => initialParts.totalHours || 0);
   const [customSeconds, setCustomSeconds] = useState(() => initialParts.totalSecondsRemaining || 0);
 
   const handleDropdownChange = (newMode) => {
     setMode(newMode);
-    if (newMode !== 'custom') {
+    if (newMode === 'match_team') {
+      onChange(null);
+    } else if (newMode !== 'custom') {
       const numMs = Number(newMode);
       onChange(numMs);
     } else {
@@ -66,6 +78,12 @@ function CompletedWindowControl({
     onChange(ms);
   };
 
+  const options = [
+    ...(includeTeamMatch ? [{ value: 'match_team', label: 'Match team setting (default)' }] : []),
+    ...COMPLETED_WINDOW_OPTIONS,
+    { value: 'custom', label: 'Custom' },
+  ];
+
   return (
     <div className="flex flex-col gap-2">
       <label
@@ -80,10 +98,7 @@ function CompletedWindowControl({
         value={mode}
         disabled={disabled}
         onChange={handleDropdownChange}
-        options={[
-          ...COMPLETED_WINDOW_OPTIONS,
-          { value: 'custom', label: 'Custom' }
-        ]}
+        options={options}
       />
 
       {mode === 'custom' && (
@@ -277,26 +292,49 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
 
         {remindersEnabled && (
           <div className="flex flex-col gap-3 p-4 bg-slate-50/70 dark:bg-[#1C2C27]/60 rounded-xl border border-slate-200/80 dark:border-[#253D36] animate-fade-in">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Notify In Advance (minutes)
-                </label>
-                <input
-                  type="number"
-                  min="5"
-                  step="5"
-                  value={reminderAdvanceMinutes}
-                  disabled={!isTeamCreator}
-                  onChange={(e) => setReminderAdvanceMinutes(e.target.value)}
-                  className="px-3 py-2 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50"
-                />
-                <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                  E.g. 30 for 30m, 60 for 1h, 1440 for 24h
-                </span>
-              </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Notify In Advance (minutes)
+              </label>
+              <input
+                type="number"
+                min="5"
+                step="5"
+                value={reminderAdvanceMinutes}
+                disabled={!isTeamCreator}
+                onChange={(e) => setReminderAdvanceMinutes(e.target.value)}
+                className="px-3 py-2 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50"
+              />
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                E.g. 30 for 30m, 60 for 1h, 1440 for 24h
+              </span>
+            </div>
 
-              <div className="flex items-center gap-2 pt-5">
+            {/* Quiet Hours Card Toggle */}
+            <div className="flex flex-col gap-3 p-3.5 bg-white dark:bg-[#15221E] rounded-xl border border-slate-200 dark:border-[#253D36] hover:border-emerald-300 dark:hover:border-emerald-800/60 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`p-2 rounded-lg transition-colors ${
+                      quietHours
+                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                        : 'bg-slate-100 dark:bg-[#1C2C27] text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    <Moon size={15} />
+                  </div>
+                  <div className="flex flex-col">
+                    <label
+                      htmlFor="quietHours"
+                      className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] cursor-pointer"
+                    >
+                      Quiet Hours
+                    </label>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Hold and mute notifications during overnight hours
+                    </span>
+                  </div>
+                </div>
                 <input
                   type="checkbox"
                   id="quietHours"
@@ -305,36 +343,39 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
                   onChange={(e) => setQuietHours(e.target.checked)}
                   className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer disabled:opacity-50"
                 />
-                <label htmlFor="quietHours" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-                  Quiet Hours (hold overnight alerts)
-                </label>
               </div>
-            </div>
 
-            {quietHours && (
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200/70 dark:border-[#253D36]">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet Start</label>
-                  <input
-                    type="time"
-                    value={quietHoursStart}
-                    disabled={!isTeamCreator}
-                    onChange={(e) => setQuietHoursStart(e.target.value)}
-                    className="px-3 py-1.5 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50"
-                  />
+              {quietHours && (
+                <div className="pt-3 border-t border-slate-100 dark:border-[#213630] grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                      <Clock size={12} className="text-slate-400" />
+                      <span>Quiet Start</span>
+                    </label>
+                    <input
+                      type="time"
+                      value={quietHoursStart}
+                      disabled={!isTeamCreator}
+                      onChange={(e) => setQuietHoursStart(e.target.value)}
+                      className="px-3 py-2 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                      <Clock size={12} className="text-slate-400" />
+                      <span>Quiet End</span>
+                    </label>
+                    <input
+                      type="time"
+                      value={quietHoursEnd}
+                      disabled={!isTeamCreator}
+                      onChange={(e) => setQuietHoursEnd(e.target.value)}
+                      className="px-3 py-2 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50"
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet End</label>
-                  <input
-                    type="time"
-                    value={quietHoursEnd}
-                    disabled={!isTeamCreator}
-                    onChange={(e) => setQuietHoursEnd(e.target.value)}
-                    className="px-3 py-1.5 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50"
-                  />
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -486,7 +527,7 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
     () => profile?.preferences?.defaultWorkspace || 'personal',
   );
   const [personalCompletedWindowMs, setPersonalCompletedWindowMs] = useState(
-    () => profile?.preferences?.completedWindowMs ?? DEFAULT_COMPLETED_WINDOW_MS,
+    () => (profile?.preferences?.completedWindowMs !== undefined ? profile?.preferences?.completedWindowMs : null),
   );
   const [personalRemindersEnabled, setPersonalRemindersEnabled] = useState(
     () => profile?.preferences?.taskRemindersEnabled ?? true,
@@ -522,10 +563,18 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
         (Number(personalReminderAdvanceMinutes) || 30) * 60000,
       );
 
+      const parsedWindowMs =
+        personalCompletedWindowMs === null ||
+        personalCompletedWindowMs === undefined ||
+        personalCompletedWindowMs === 'match_team' ||
+        personalCompletedWindowMs === ''
+          ? null
+          : Number(personalCompletedWindowMs);
+
       const updatedPrefs = {
         theme,
         defaultWorkspace,
-        completedWindowMs: Number(personalCompletedWindowMs),
+        completedWindowMs: parsedWindowMs,
         taskRemindersEnabled: personalRemindersEnabled,
         reminderAdvanceMs: advanceMs,
         quietHours: personalQuietHours,
@@ -718,6 +767,7 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
             <CompletedWindowControl
               idPrefix="personal"
               value={personalCompletedWindowMs}
+              includeTeamMatch={true}
               onChange={(newMs) => setPersonalCompletedWindowMs(newMs)}
             />
 
@@ -738,26 +788,49 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
             </div>
 
             {personalRemindersEnabled && (
-              <div className="flex flex-col gap-3 pl-4 border-l-2 border-emerald-300 dark:border-emerald-700">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                      Notify In Advance (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      min="5"
-                      step="5"
-                      value={personalReminderAdvanceMinutes}
-                      onChange={(e) => setPersonalReminderAdvanceMinutes(e.target.value)}
-                      className="px-3 py-2 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-sm"
-                    />
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                      E.g. 30 for 30m, 60 for 1h, 1440 for 24h
-                    </span>
-                  </div>
+              <div className="flex flex-col gap-3 p-4 bg-slate-50/70 dark:bg-[#1C2C27]/60 rounded-xl border border-slate-200/80 dark:border-[#253D36] animate-fade-in">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Notify In Advance (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    step="5"
+                    value={personalReminderAdvanceMinutes}
+                    onChange={(e) => setPersonalReminderAdvanceMinutes(e.target.value)}
+                    className="px-3 py-2 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                    E.g. 30 for 30m, 60 for 1h, 1440 for 24h
+                  </span>
+                </div>
 
-                  <div className="flex items-center gap-2 pt-5">
+                {/* Quiet Hours Card Toggle */}
+                <div className="flex flex-col gap-3 p-3.5 bg-white dark:bg-[#15221E] rounded-xl border border-slate-200 dark:border-[#253D36] hover:border-emerald-300 dark:hover:border-emerald-800/60 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`p-2 rounded-lg transition-colors ${
+                          personalQuietHours
+                            ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                            : 'bg-slate-100 dark:bg-[#1C2C27] text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        <Moon size={15} />
+                      </div>
+                      <div className="flex flex-col">
+                        <label
+                          htmlFor="personalQuietHours"
+                          className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] cursor-pointer"
+                        >
+                          Quiet Hours
+                        </label>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Hold and mute notifications during overnight hours
+                        </span>
+                      </div>
+                    </div>
                     <input
                       type="checkbox"
                       id="personalQuietHours"
@@ -765,34 +838,37 @@ function Preferences({ user, profile, teams = [], workspace, onUpdateProfile, on
                       onChange={(e) => setPersonalQuietHours(e.target.checked)}
                       className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer"
                     />
-                    <label htmlFor="personalQuietHours" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-                      Quiet Hours (hold overnight notifications)
-                    </label>
                   </div>
-                </div>
 
-                {personalQuietHours && (
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet Start</label>
-                      <input
-                        type="time"
-                        value={personalQuietHoursStart}
-                        onChange={(e) => setPersonalQuietHoursStart(e.target.value)}
-                        className="px-3 py-1.5 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs"
-                      />
+                  {personalQuietHours && (
+                    <div className="pt-3 border-t border-slate-100 dark:border-[#213630] grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                          <Clock size={12} className="text-slate-400" />
+                          <span>Quiet Start</span>
+                        </label>
+                        <input
+                          type="time"
+                          value={personalQuietHoursStart}
+                          onChange={(e) => setPersonalQuietHoursStart(e.target.value)}
+                          className="px-3 py-2 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                          <Clock size={12} className="text-slate-400" />
+                          <span>Quiet End</span>
+                        </label>
+                        <input
+                          type="time"
+                          value={personalQuietHoursEnd}
+                          onChange={(e) => setPersonalQuietHoursEnd(e.target.value)}
+                          className="px-3 py-2 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        />
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet End</label>
-                      <input
-                        type="time"
-                        value={personalQuietHoursEnd}
-                        onChange={(e) => setPersonalQuietHoursEnd(e.target.value)}
-                        className="px-3 py-1.5 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs"
-                      />
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
