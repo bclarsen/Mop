@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { addDoc, collection, deleteDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
+import { notifyTaskCompletion } from '../utils/notificationService';
 import {
   formatCompletedAt,
   formatDueDate,
@@ -35,7 +36,7 @@ const FREQ_LABELS = {
   monthly: 'Monthly',
 };
 
-function TaskItem({ task, currentUser, allAssignees = [], onToggleTask, onDeleteTask, onEditTask }) {
+function TaskItem({ task, currentUser, allAssignees = [], activeTeam, onToggleTask, onDeleteTask, onEditTask }) {
   const [expanded, setExpanded] = useState(false);
   const [actionError, setActionError] = useState('');
   const assignee = allAssignees.find((a) => a.uid === task.assignedTo);
@@ -61,6 +62,16 @@ function TaskItem({ task, currentUser, allAssignees = [], onToggleTask, onDelete
           lastCompletedByName: currentUser.displayName,
           completionHistory: arrayUnion(completion),
         });
+
+        if (task.workspace !== 'personal' && activeTeam) {
+          notifyTaskCompletion({
+            user: currentUser,
+            workspace: task.workspace,
+            activeTeam: activeTeam,
+            allAssignees: allAssignees,
+            task: task,
+          });
+        }
       }
       if (onToggleTask) {
         onToggleTask(task.id, completion);

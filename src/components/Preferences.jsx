@@ -1,5 +1,21 @@
 import { useState } from 'react';
-import { Save, Check, AlertCircle, Bell, Shuffle, User, Users, Clock, Moon, Sun, Monitor } from 'lucide-react';
+import {
+  Save,
+  Check,
+  AlertCircle,
+  Bell,
+  Shuffle,
+  User,
+  Users,
+  Clock,
+  Moon,
+  Sun,
+  Monitor,
+  Mail,
+  UserPlus,
+  UserCheck,
+  CheckCheck,
+} from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CustomSelect } from './CustomSelect';
@@ -142,6 +158,16 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
     () => activeTeam?.preferences?.quietHoursEnd || '07:00',
   );
 
+  const [emailTeamInvites, setEmailTeamInvites] = useState(
+    () => activeTeam?.preferences?.emailTeamInvites ?? true,
+  );
+  const [emailTaskCompletions, setEmailTaskCompletions] = useState(
+    () => activeTeam?.preferences?.emailTaskCompletions ?? true,
+  );
+  const [emailTaskAssignments, setEmailTaskAssignments] = useState(
+    () => activeTeam?.preferences?.emailTaskAssignments ?? true,
+  );
+
   const [savingTeam, setSavingTeam] = useState(false);
   const [teamStatus, setTeamStatus] = useState(null);
 
@@ -165,6 +191,9 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
         quietHours,
         quietHoursStart,
         quietHoursEnd,
+        emailTeamInvites,
+        emailTaskCompletions,
+        emailTaskAssignments,
       };
 
       if (!user?.isDemo) {
@@ -191,119 +220,239 @@ function TeamPreferencesForm({ activeTeam, isTeamCreator, user, onUpdateTeam }) 
   };
 
   return (
-    <form onSubmit={handleSaveTeam} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
-          <Shuffle size={14} className="text-emerald-600 dark:text-emerald-400" />
-          <span>Auto-Assign Mode</span>
-        </label>
-        <CustomSelect
-          value={teamAutoAssign}
-          disabled={!isTeamCreator}
-          onChange={setTeamAutoAssign}
-          options={[
-            { value: 'manual', label: 'Manual Assignment' },
-            { value: 'rotate', label: 'Automatic Fair Rotation' }
-          ]}
-        />
-      </div>
-
-      <CompletedWindowControl
-        idPrefix="team"
-        value={teamCompletedWindowMs}
-        disabled={!isTeamCreator}
-        onChange={(newMs) => setTeamCompletedWindowMs(newMs)}
-      />
-
-      <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-[#1C2C27] rounded-xl border border-slate-200 dark:border-[#253D36]">
-        <div className="flex flex-col">
-          <span className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] flex items-center gap-1.5">
-            <Bell size={14} className="text-amber-500 dark:text-amber-400" />
-            <span>Task Due Date Notifications</span>
+    <form onSubmit={handleSaveTeam} className="flex flex-col gap-6">
+      {/* Section 1: Task Assignment & Visibility */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+            <Shuffle size={14} className="text-emerald-600 dark:text-emerald-400" />
+            <span>Auto-Assign Mode</span>
+          </label>
+          <CustomSelect
+            value={teamAutoAssign}
+            disabled={!isTeamCreator}
+            onChange={setTeamAutoAssign}
+            options={[
+              { value: 'manual', label: 'Manual Assignment' },
+              { value: 'rotate', label: 'Automatic Fair Rotation' },
+            ]}
+          />
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            Automatically distribute new tasks evenly among roommates or keep manual control.
           </span>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">Receive alerts in the notification center when a task deadline is approaching</span>
         </div>
-        <input
-          type="checkbox"
-          checked={remindersEnabled}
+
+        <CompletedWindowControl
+          idPrefix="team"
+          value={teamCompletedWindowMs}
           disabled={!isTeamCreator}
-          onChange={(e) => setRemindersEnabled(e.target.checked)}
-          className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer"
+          onChange={(newMs) => setTeamCompletedWindowMs(newMs)}
         />
       </div>
 
-      {remindersEnabled && (
-        <div className="flex flex-col gap-3 pl-4 border-l-2 border-emerald-300 dark:border-emerald-700">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                Notify In Advance (minutes)
-              </label>
-              <input
-                type="number"
-                min="5"
-                step="5"
-                value={reminderAdvanceMinutes}
-                disabled={!isTeamCreator}
-                onChange={(e) => setReminderAdvanceMinutes(e.target.value)}
-                className="px-3 py-2 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-sm"
-              />
-              <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                E.g. 30 for 30m, 60 for 1h, 1440 for 24h
-              </span>
+      {/* Section 2: Due Date Notifications & Quiet Hours */}
+      <div className="flex flex-col gap-3 pt-2 border-t border-slate-100 dark:border-[#213630]">
+        <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+          <Bell size={14} className="text-amber-500 dark:text-amber-400" />
+          <span>In-App Task Reminders</span>
+        </label>
+
+        <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-[#1C2C27] rounded-xl border border-slate-200 dark:border-[#253D36]">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4]">
+              Task Due Date Alerts
+            </span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Show alerts in the in-app notification center when task deadlines approach
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={remindersEnabled}
+            disabled={!isTeamCreator}
+            onChange={(e) => setRemindersEnabled(e.target.checked)}
+            className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer disabled:opacity-50"
+          />
+        </div>
+
+        {remindersEnabled && (
+          <div className="flex flex-col gap-3 p-4 bg-slate-50/70 dark:bg-[#1C2C27]/60 rounded-xl border border-slate-200/80 dark:border-[#253D36] animate-fade-in">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Notify In Advance (minutes)
+                </label>
+                <input
+                  type="number"
+                  min="5"
+                  step="5"
+                  value={reminderAdvanceMinutes}
+                  disabled={!isTeamCreator}
+                  onChange={(e) => setReminderAdvanceMinutes(e.target.value)}
+                  className="px-3 py-2 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50"
+                />
+                <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                  E.g. 30 for 30m, 60 for 1h, 1440 for 24h
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 pt-5">
+                <input
+                  type="checkbox"
+                  id="quietHours"
+                  checked={quietHours}
+                  disabled={!isTeamCreator}
+                  onChange={(e) => setQuietHours(e.target.checked)}
+                  className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer disabled:opacity-50"
+                />
+                <label htmlFor="quietHours" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                  Quiet Hours (hold overnight alerts)
+                </label>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 pt-5">
-              <input
-                type="checkbox"
-                id="quietHours"
-                checked={quietHours}
-                disabled={!isTeamCreator}
-                onChange={(e) => setQuietHours(e.target.checked)}
-                className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer"
-              />
-              <label htmlFor="quietHours" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-                Quiet Hours (hold overnight notifications)
-              </label>
+            {quietHours && (
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200/70 dark:border-[#253D36]">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet Start</label>
+                  <input
+                    type="time"
+                    value={quietHoursStart}
+                    disabled={!isTeamCreator}
+                    onChange={(e) => setQuietHoursStart(e.target.value)}
+                    className="px-3 py-1.5 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet End</label>
+                  <input
+                    type="time"
+                    value={quietHoursEnd}
+                    disabled={!isTeamCreator}
+                    onChange={(e) => setQuietHoursEnd(e.target.value)}
+                    className="px-3 py-1.5 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Section 3: Email Notifications (Firebase Trigger Email) */}
+      <div className="flex flex-col gap-3 pt-2 border-t border-slate-100 dark:border-[#213630]">
+        <div className="flex flex-col gap-0.5">
+          <label className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider flex items-center gap-1.5">
+            <Mail size={14} className="text-emerald-600 dark:text-emerald-400" />
+            <span>Allow email notifications for:</span>
+          </label>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            Automatically sends email updates to team members via Firebase Trigger Email
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          {/* Team Invites */}
+          <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-[#1C2C27] rounded-xl border border-slate-200 dark:border-[#253D36] hover:border-emerald-300 dark:hover:border-emerald-800/60 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-100/70 dark:bg-[#15221E] text-emerald-700 dark:text-emerald-400">
+                <UserPlus size={15} />
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="emailTeamInvites"
+                  className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] cursor-pointer"
+                >
+                  Team Invites
+                </label>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Notify invited roommates by email with joining instructions
+                </span>
+              </div>
             </div>
+            <input
+              type="checkbox"
+              id="emailTeamInvites"
+              checked={emailTeamInvites}
+              disabled={!isTeamCreator}
+              onChange={(e) => setEmailTeamInvites(e.target.checked)}
+              className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer disabled:opacity-50"
+            />
           </div>
 
-          {quietHours && (
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet Start</label>
-                <input
-                  type="time"
-                  value={quietHoursStart}
-                  disabled={!isTeamCreator}
-                  onChange={(e) => setQuietHoursStart(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs"
-                />
+          {/* Task Completions */}
+          <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-[#1C2C27] rounded-xl border border-slate-200 dark:border-[#253D36] hover:border-emerald-300 dark:hover:border-emerald-800/60 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-100/70 dark:bg-[#15221E] text-emerald-700 dark:text-emerald-400">
+                <CheckCheck size={15} />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-600 dark:text-slate-300">Quiet End</label>
-                <input
-                  type="time"
-                  value={quietHoursEnd}
-                  disabled={!isTeamCreator}
-                  onChange={(e) => setQuietHoursEnd(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-50 dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] text-slate-800 dark:text-[#F0FDF4] rounded-lg text-xs"
-                />
+              <div className="flex flex-col">
+                <label
+                  htmlFor="emailTaskCompletions"
+                  className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] cursor-pointer"
+                >
+                  Task Completions
+                </label>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Notify all workspace members when a task is completed
+                </span>
               </div>
             </div>
-          )}
-        </div>
-      )}
+            <input
+              type="checkbox"
+              id="emailTaskCompletions"
+              checked={emailTaskCompletions}
+              disabled={!isTeamCreator}
+              onChange={(e) => setEmailTaskCompletions(e.target.checked)}
+              className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer disabled:opacity-50"
+            />
+          </div>
 
+          {/* Task Assignations */}
+          <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-[#1C2C27] rounded-xl border border-slate-200 dark:border-[#253D36] hover:border-emerald-300 dark:hover:border-emerald-800/60 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-100/70 dark:bg-[#15221E] text-emerald-700 dark:text-emerald-400">
+                <UserCheck size={15} />
+              </div>
+              <div className="flex flex-col">
+                <label
+                  htmlFor="emailTaskAssignments"
+                  className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] cursor-pointer"
+                >
+                  Task Assignations
+                </label>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Notify members when assigned a chore or when unassigned tasks are created
+                </span>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              id="emailTaskAssignments"
+              checked={emailTaskAssignments}
+              disabled={!isTeamCreator}
+              onChange={(e) => setEmailTaskAssignments(e.target.checked)}
+              className="h-4 w-4 text-emerald-600 dark:text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer disabled:opacity-50"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Status feedback message */}
       {teamStatus && (
-        <div className={`p-3 rounded-xl flex items-center gap-2 text-xs font-semibold ${
-          teamStatus.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-        }`}>
+        <div
+          className={`p-3 rounded-xl flex items-center gap-2 text-xs font-semibold ${
+            teamStatus.type === 'success'
+              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+              : 'bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+          }`}
+        >
           {teamStatus.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
           <span>{teamStatus.message}</span>
         </div>
       )}
 
+      {/* Save Action */}
       {isTeamCreator && (
         <div className="pt-2">
           <button

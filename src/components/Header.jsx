@@ -7,6 +7,7 @@ import { auth, db } from '../firebase';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { SETTINGS_PAGES } from '../constants/settings';
 import { formatDueDate } from '../utils/dateHelpers';
+import { notifyTeamInvite } from '../utils/notificationService';
 import {
   collection,
   addDoc,
@@ -173,6 +174,13 @@ function Header({
           inviteeEmail: normalizedEmail,
           status: 'pending',
           createdAt: serverTimestamp(),
+        });
+        
+        notifyTeamInvite({
+          inviterName: user.displayName || user.email?.split('@')[0] || 'A user',
+          inviteeEmail: normalizedEmail,
+          teamName: currentTeam.name,
+          activeTeam: currentTeam,
         });
       }
       setInviteStatus({

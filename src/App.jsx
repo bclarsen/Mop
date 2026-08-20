@@ -1067,6 +1067,7 @@ function App() {
                 tasks={workspaceTasks}
                 currentUser={user}
                 allAssignees={allAssignees}
+                activeTeam={activeTeam}
                 completedWindowMs={completedWindowMs}
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}

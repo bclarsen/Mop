@@ -2,6 +2,39 @@ import { addDoc, collection, doc, serverTimestamp, updateDoc, deleteDoc } from '
 import { db } from '../firebase';
 
 const notifsRef = collection(db, 'notifications');
+const mailRef = collection(db, 'mail');
+
+async function createNotificationWithEmail(notificationData, allAssignees, sendEmail = true) {
+  try {
+    const promises = [];
+
+    // 1. Create in-app notification
+    promises.push(
+      addDoc(notifsRef, {
+        ...notificationData,
+        createdAt: serverTimestamp(),
+      })
+    );
+
+    // 2. Create email document for Firebase "Trigger Email" extension
+    const recipient = allAssignees.find(a => a.uid === notificationData.recipientUid);
+    if (sendEmail && recipient && recipient.email) {
+      promises.push(
+        addDoc(mailRef, {
+          to: recipient.email,
+          message: {
+            subject: notificationData.title,
+            html: `<p>${notificationData.message}</p>`,
+          }
+        })
+      );
+    }
+
+    await Promise.all(promises);
+  } catch (err) {
+    console.warn('Failed to save notification/email:', err);
+  }
+}
 
 /**
  * Creates notifications for task creation in team workspaces.
@@ -18,7 +51,7 @@ export async function notifyTaskCreation({
   allAssignees = [],
   task,
 }) {
-  if (!user || workspace === 'personal' || !activeTeam) {
+  if (!user || workspace === 'personal' || !activeTeam || user.isDemo) {
     return [];
   }
 
@@ -74,24 +107,92 @@ export async function notifyTaskCreation({
     });
   }
 
-  if (notificationsToCreate.length === 0) return [];
-
-  if (!user.isDemo) {
-    try {
-      await Promise.all(
-        notificationsToCreate.map((n) =>
-          addDoc(notifsRef, {
-            ...n,
-            createdAt: serverTimestamp(),
-          }),
-        ),
-      );
-    } catch (err) {
-      console.warn('Failed to save notifications to Firestore:', err);
-    }
+  if (notificationsToCreate.length > 0) {
+    const sendEmail = activeTeam?.preferences?.emailTaskAssignments ?? true;
+    await Promise.all(
+      notificationsToCreate.map((n) => createNotificationWithEmail(n, allAssignees, sendEmail))
+    );
   }
 
   return notificationsToCreate;
+}
+
+/**
+ * Creates notifications when a task is completed in a team workspace.
+ * Notifies all other members of the workspace.
+ */
+export async function notifyTaskCompletion({
+  user,
+  workspace,
+  activeTeam,
+  allAssignees = [],
+  task,
+}) {
+  if (!user || workspace === 'personal' || !activeTeam || user.isDemo) {
+    return [];
+  }
+
+  const actorUid = user.uid;
+  const actorName = user.displayName || user.email?.split('@')[0] || 'A teammate';
+  const teamName = activeTeam.name || 'Team Workspace';
+
+  const notificationsToCreate = [];
+  const memberUids = new Set(activeTeam.members || []);
+  allAssignees.forEach((a) => {
+    if (a.uid && !a.isPending) memberUids.add(a.uid);
+  });
+
+  memberUids.forEach((memberUid) => {
+    if (memberUid && memberUid !== actorUid) {
+      notificationsToCreate.push({
+        recipientUid: memberUid,
+        actorUid,
+        actorName,
+        type: 'task_completed',
+        title: 'Task Completed',
+        message: `${actorName} completed "${task.name}" in ${teamName}.`,
+        taskId: task.id || '',
+        taskName: task.name,
+        room: task.room || 'General',
+        teamId: workspace,
+        teamName,
+        read: false,
+      });
+    }
+  });
+
+  if (notificationsToCreate.length > 0) {
+    const sendEmail = activeTeam?.preferences?.emailTaskCompletions ?? true;
+    await Promise.all(
+      notificationsToCreate.map((n) => createNotificationWithEmail(n, allAssignees, sendEmail))
+    );
+  }
+
+  return notificationsToCreate;
+}
+
+export async function notifyTeamInvite({
+  inviterName,
+  inviteeEmail,
+  teamName,
+  activeTeam
+}) {
+  if (!inviteeEmail) return;
+
+  const sendEmail = activeTeam?.preferences?.emailTeamInvites ?? true;
+  if (!sendEmail) return;
+
+  try {
+    await addDoc(mailRef, {
+      to: inviteeEmail,
+      message: {
+        subject: `You've been invited to join ${teamName}!`,
+        html: `<p>Hi there,</p><p><strong>${inviterName}</strong> has invited you to join their household workspace <strong>${teamName}</strong>.</p><p>Log in to the app with this email address to accept the invite and start collaborating!</p>`,
+      }
+    });
+  } catch (err) {
+    console.warn('Failed to send team invite email:', err);
+  }
 }
 
 export async function markNotificationRead(notifId, isDemo = false) {

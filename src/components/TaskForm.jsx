@@ -149,9 +149,10 @@ function TaskForm({
         if (workspace !== 'personal' && activeTeam) {
           notifyTaskCreation({
             task: taskWithId,
-            team: activeTeam,
-            currentUser: user,
-            assignedUid: resolvedAssignee,
+            activeTeam: activeTeam,
+            workspace: workspace,
+            user: user,
+            allAssignees: allAssignees,
           });
         }
       } else {

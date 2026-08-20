@@ -74,6 +74,7 @@ function TaskList({
   tasks,
   currentUser,
   allAssignees,
+  activeTeam,
   completedWindowMs = DEFAULT_COMPLETED_WINDOW_MS,
   onToggleTask,
   onDeleteTask,
@@ -165,6 +166,7 @@ function TaskList({
                     task={task}
                     currentUser={currentUser}
                     allAssignees={allAssignees}
+                    activeTeam={activeTeam}
                     onToggleTask={onToggleTask}
                     onDeleteTask={onDeleteTask}
                     onEditTask={onEditTask}
@@ -198,6 +200,7 @@ function TaskList({
                     task={task}
                     currentUser={currentUser}
                     allAssignees={allAssignees}
+                    activeTeam={activeTeam}
                     onToggleTask={onToggleTask}
                     onDeleteTask={onDeleteTask}
                     onEditTask={onEditTask}
