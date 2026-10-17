@@ -124,7 +124,7 @@ function TaskItem({ task, currentUser, allAssignees = [], activeTeam, onToggleTa
 
   return (
     <div
-      className={`relative rounded-2xl border transition-all duration-200 overflow-hidden cursor-pointer ${
+      className={`relative rounded-2xl sm:rounded-3xl border transition-all duration-200 overflow-hidden cursor-pointer ${
         overdue
           ? 'border-red-300 dark:border-red-900/80 bg-red-50/20 dark:bg-red-950/20 shadow-xs'
           : isDone
@@ -134,29 +134,29 @@ function TaskItem({ task, currentUser, allAssignees = [], activeTeam, onToggleTa
       onClick={() => setExpanded(!expanded)}
     >
       {/* Priority indicator strip */}
-      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${isDone ? 'bg-slate-300 dark:bg-slate-700' : priority.bar}`} />
+      <div className={`absolute left-0 top-0 bottom-0 w-1.5 sm:w-2 ${isDone ? 'bg-slate-300 dark:bg-slate-700' : priority.bar}`} />
 
-      <div className="pl-4.5 pr-4 py-3.5 flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="pl-5 pr-4 sm:pl-7 sm:pr-6 py-4 sm:py-5 flex flex-col gap-3.5 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
           {/* Main Task Info */}
           <div className="flex flex-col min-w-0 pr-2">
-            <span className={`text-sm font-bold truncate leading-snug ${isDone ? 'line-through text-slate-400 dark:text-slate-500' : 'text-teal-950 dark:text-[#F0FDF4]'}`}>
+            <span className={`text-base sm:text-lg font-bold truncate leading-snug tracking-tight ${isDone ? 'line-through text-slate-400 dark:text-slate-500' : 'text-teal-950 dark:text-[#F0FDF4]'}`}>
               {task.name}
             </span>
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-400 mt-1 flex-wrap">
-              <span className={`font-semibold px-2 py-0.5 rounded-md border ${
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 dark:text-slate-400 mt-1.5 flex-wrap">
+              <span className={`font-semibold px-2.5 py-0.5 sm:py-1 rounded-lg border text-xs ${
                 isDone
                   ? 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#1C2C27] border-slate-200 dark:border-[#253D36]'
                   : 'text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-[#1C2C27] border-emerald-100/80 dark:border-[#253D36]'
               }`}>
                 {task.room}
               </span>
-              <span>·</span>
+              <span aria-hidden="true">·</span>
               <span className="font-medium text-slate-500 dark:text-slate-400">
                 {FREQ_LABELS[task.frequency] || task.frequency}
               </span>
               {task.tags?.map((t) => (
-                <span key={t} className="bg-slate-100 dark:bg-[#1C2C27] text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-[11px]">
+                <span key={t} className="bg-slate-100 dark:bg-[#1C2C27] text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md text-xs">
                   {t}
                 </span>
               ))}
@@ -164,14 +164,14 @@ function TaskItem({ task, currentUser, allAssignees = [], activeTeam, onToggleTa
           </div>
 
           {/* Actions & Badges */}
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
-            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${isDone ? 'bg-slate-100 dark:bg-[#1C2C27] text-slate-400 border-slate-200 dark:border-[#253D36]' : `${priority.bg} ${priority.color} ${priority.border}`}`}>
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 self-end sm:self-auto flex-wrap">
+            <span className={`px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold border ${isDone ? 'bg-slate-100 dark:bg-[#1C2C27] text-slate-400 border-slate-200 dark:border-[#253D36]' : `${priority.bg} ${priority.color} ${priority.border}`}`}>
               {priority.label}
             </span>
 
             {assignee && (
               <div
-                className="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-700 border border-white dark:border-[#15221E] shadow-xs overflow-hidden flex items-center justify-center text-[10px] font-bold text-slate-700 dark:text-slate-200"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-slate-200 dark:bg-slate-700 border border-white dark:border-[#15221E] shadow-xs overflow-hidden flex items-center justify-center text-xs font-bold text-slate-700 dark:text-slate-200"
                 title={`Assigned to ${assignee.name || 'Unknown'}`}
               >
                 {assignee.photoURL ? (
@@ -184,7 +184,7 @@ function TaskItem({ task, currentUser, allAssignees = [], activeTeam, onToggleTa
 
             {task.dueDate && (
               <span
-                className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md ${
+                className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium px-2.5 py-1 sm:py-1.5 rounded-lg ${
                   overdue
                     ? 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 font-bold'
                     : 'text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#1C2C27]'
@@ -192,23 +192,23 @@ function TaskItem({ task, currentUser, allAssignees = [], activeTeam, onToggleTa
                 title={`Due ${formatDueDate(task.dueDate)}`}
               >
                 {hasDueTime(task.dueDate) ? (
-                  <Clock size={12} strokeWidth={2} />
+                  <Clock size={14} strokeWidth={2} />
                 ) : (
-                  <Calendar size={12} strokeWidth={2} />
+                  <Calendar size={14} strokeWidth={2} />
                 )}
                 <span>{formatDueDate(task.dueDate)}</span>
               </span>
             )}
 
             {overdue && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800">
-                <AlertCircle size={11} strokeWidth={2.5} />
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-extrabold bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800">
+                <AlertCircle size={13} strokeWidth={2.5} />
                 Overdue
               </span>
             )}
 
             <button
-              className={`inline-flex items-center gap-1 px-3 py-1.5 active:scale-95 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 active:scale-95 text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all cursor-pointer ${
                 isDone
                   ? 'bg-slate-100 dark:bg-[#1C2C27] hover:bg-emerald-600 text-slate-500 dark:text-slate-300 hover:text-white border border-slate-200 dark:border-[#253D36] hover:border-emerald-600'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white'
@@ -219,13 +219,13 @@ function TaskItem({ task, currentUser, allAssignees = [], activeTeam, onToggleTa
               }}
               title={isDone ? 'Mark completed again' : 'Mark completed'}
             >
-              <Check size={13} strokeWidth={3} className={isDone ? 'text-emerald-600 dark:text-emerald-400 group-hover:text-white' : 'text-white'} />
+              <Check size={15} strokeWidth={3} className={isDone ? 'text-emerald-600 dark:text-emerald-400 group-hover:text-white' : 'text-white'} />
               <span>Done</span>
             </button>
 
             <button
               type="button"
-              className="p-1.5 text-slate-400 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-[#1C2C27] rounded-lg transition-colors cursor-pointer"
+              className="p-2 sm:p-2.5 text-slate-400 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-[#1C2C27] rounded-xl transition-colors cursor-pointer"
               title="Edit task"
               onClick={(e) => {
                 e.stopPropagation();
@@ -234,29 +234,29 @@ function TaskItem({ task, currentUser, allAssignees = [], activeTeam, onToggleTa
                 }
               }}
             >
-              <Pencil size={14} strokeWidth={2} />
+              <Pencil size={16} strokeWidth={2} />
             </button>
 
             <button
-              className="p-1.5 text-slate-300 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer"
+              className="p-2 sm:p-2.5 text-slate-300 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors cursor-pointer"
               title="Delete task"
               onClick={(e) => {
                 e.stopPropagation();
                 removeTask();
               }}
             >
-              <Trash2 size={14} strokeWidth={2} />
+              <Trash2 size={16} strokeWidth={2} />
             </button>
 
             <button
               type="button"
-              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded cursor-pointer"
+              className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded(!expanded);
               }}
             >
-              {expanded ? <ChevronUp size={15} strokeWidth={2.5} /> : <ChevronDown size={15} strokeWidth={2.5} />}
+              {expanded ? <ChevronUp size={17} strokeWidth={2.5} /> : <ChevronDown size={17} strokeWidth={2.5} />}
             </button>
           </div>
         </div>
@@ -264,11 +264,11 @@ function TaskItem({ task, currentUser, allAssignees = [], activeTeam, onToggleTa
         {/* Expanded Details */}
         {expanded && (
           <div
-            className="pt-3 mt-1 border-t border-slate-100 dark:border-[#213630] flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-300 animate-fade-in"
+            className="pt-4 mt-1 border-t border-slate-100 dark:border-[#213630] flex flex-col gap-2.5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             {task.lastCompleted && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <span className="font-bold text-teal-950 dark:text-[#F0FDF4]">Last Completed:</span>
                 <span>{formatCompletedAt(task.lastCompleted)}</span>
                 {task.lastCompletedByName && <span className="text-slate-400 dark:text-slate-400">by {task.lastCompletedByName}</span>}
@@ -276,25 +276,25 @@ function TaskItem({ task, currentUser, allAssignees = [], activeTeam, onToggleTa
             )}
 
             {nextDue && task.frequency !== 'once' && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <span className="font-bold text-teal-950 dark:text-[#F0FDF4]">Next Due:</span>
                 <span>{formatCompletedAt(nextDue.getTime())}</span>
               </div>
             )}
 
             {task.notes && (
-              <div className="flex flex-col gap-0.5 bg-slate-50 dark:bg-[#111B18] p-2.5 rounded-xl border border-slate-100 dark:border-[#253D36]">
+              <div className="flex flex-col gap-1 bg-slate-50 dark:bg-[#111B18] p-3 sm:p-3.5 rounded-xl border border-slate-100 dark:border-[#253D36]">
                 <span className="font-bold text-teal-950 dark:text-[#F0FDF4]">Notes:</span>
                 <span className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{task.notes}</span>
               </div>
             )}
 
             {task.completionHistory?.length > 0 && (
-              <div className="mt-1 flex flex-col gap-1">
+              <div className="mt-1 flex flex-col gap-1.5">
                 <span className="font-bold text-teal-950 dark:text-[#F0FDF4]">
                   Recent Completions ({task.completionHistory.length}):
                 </span>
-                <ul className="pl-4 list-disc text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5">
+                <ul className="pl-4 list-disc text-xs sm:text-xs text-slate-500 dark:text-slate-400 space-y-1">
                   {[...task.completionHistory]
                     .reverse()
                     .slice(0, 5)

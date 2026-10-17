@@ -141,25 +141,25 @@ function TaskList({
     <div className="px-4 md:px-8 pb-16 flex flex-col gap-8">
       {/* Active Tasks Section */}
       {activeTasks.length > 0 && (
-        <section className="flex flex-col gap-5">
-          <div className="flex items-center gap-2 pb-1 border-b border-emerald-100/80 dark:border-[#213630]">
-            <ListTodo size={18} className="text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-sm font-extrabold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">
+        <section className="flex flex-col gap-6">
+          <div className="flex items-center gap-2.5 pb-1.5 border-b border-emerald-100/80 dark:border-[#213630]">
+            <ListTodo size={20} className="text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-sm md:text-base font-extrabold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">
               Active Tasks ({activeTasks.length})
             </h2>
           </div>
 
           {Object.entries(groupAndSort(activeTasks)).map(([room, roomTasks]) => (
-            <div key={room} className="flex flex-col gap-2.5">
+            <div key={room} className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <span className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
                   <span>{room}</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-[#1C2C27] text-[10px] text-slate-600 dark:text-slate-300 font-extrabold">
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#1C2C27] text-xs text-slate-600 dark:text-slate-300 font-extrabold">
                     {roomTasks.length}
                   </span>
                 </span>
               </div>
-              <div className="grid grid-cols-1 gap-2.5">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
                 {roomTasks.map((task) => (
                   <TaskItem
                     key={task.id}
@@ -180,20 +180,20 @@ function TaskList({
 
       {/* Recently Completed Tasks Section (Faded) */}
       {completedTasks.length > 0 && (
-        <section className="flex flex-col gap-5 pt-4">
-          <div className="flex items-center gap-2 pb-1 border-b border-slate-200 dark:border-[#213630]">
-            <CheckCircle2 size={18} className="text-emerald-500 dark:text-emerald-400" />
-            <h2 className="text-sm font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        <section className="flex flex-col gap-6 pt-4">
+          <div className="flex items-center gap-2.5 pb-1.5 border-b border-slate-200 dark:border-[#213630]">
+            <CheckCircle2 size={20} className="text-emerald-500 dark:text-emerald-400" />
+            <h2 className="text-sm md:text-base font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Completed Tasks ({completedTasks.length})
             </h2>
           </div>
 
           {Object.entries(groupAndSort(completedTasks)).map(([room, roomTasks]) => (
-            <div key={room} className="flex flex-col gap-2.5">
-              <span className="text-xs font-bold text-slate-400 dark:text-slate-400">
+            <div key={room} className="flex flex-col gap-3">
+              <span className="text-xs md:text-sm font-bold text-slate-400 dark:text-slate-400">
                 {room} ({roomTasks.length})
               </span>
-              <div className="grid grid-cols-1 gap-2.5">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
                 {roomTasks.map((task) => (
                   <TaskItem
                     key={task.id}

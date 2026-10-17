@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, Pencil, Trash2, ListTodo, Layers, User } from 'lucide-react';
+import { Plus, X, Pencil, Trash2, ListTodo, Layers, User, ChevronDown, ChevronRight } from 'lucide-react';
 import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CustomSelect } from './CustomSelect';
@@ -23,6 +23,16 @@ export default function Routines({ user, workspace, rooms, allAssignees, routine
   const [isCreatingRoutine, setIsCreatingRoutine] = useState(false);
   const [newRoutineName, setNewRoutineName] = useState('');
   
+  // Set of collapsed routine IDs (empty by default so they start expanded, or toggled)
+  const [collapsedRoutines, setCollapsedRoutines] = useState({});
+
+  const toggleCollapse = (routineId) => {
+    setCollapsedRoutines((prev) => ({
+      ...prev,
+      [routineId]: !prev[routineId],
+    }));
+  };
+
   // For adding/editing tasks inside a routine
   const [taskFormRoutineId, setTaskFormRoutineId] = useState(null);
   const [editingTaskIndex, setEditingTaskIndex] = useState(null); // Inside a routine's tasks array
@@ -110,6 +120,10 @@ export default function Routines({ user, workspace, rooms, allAssignees, routine
   };
 
   const openTaskForm = (routine, taskIndex = null) => {
+    // If routine was collapsed, uncollapse it when opening task form
+    if (collapsedRoutines[routine.id]) {
+      setCollapsedRoutines((prev) => ({ ...prev, [routine.id]: false }));
+    }
     setTaskFormRoutineId(routine.id);
     if (taskIndex !== null) {
       const task = routine.tasks[taskIndex];
@@ -141,7 +155,7 @@ export default function Routines({ user, workspace, rooms, allAssignees, routine
         {!isCreatingRoutine && (
           <button
             onClick={() => setIsCreatingRoutine(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm cursor-pointer"
           >
             <Plus size={16} strokeWidth={2.5} />
             New Routine
@@ -190,159 +204,191 @@ export default function Routines({ user, workspace, rooms, allAssignees, routine
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-5">
-          {routines.map((routine) => (
-            <div key={routine.id} className="bg-white dark:bg-[#15221E] border border-slate-200 dark:border-[#213630] rounded-3xl shadow-xs overflow-hidden">
-              <div className="bg-slate-50/50 dark:bg-[#1C2C27]/30 px-5 py-4 border-b border-slate-100 dark:border-[#213630] flex items-center justify-between">
-                <h3 className="font-extrabold text-teal-950 dark:text-[#F0FDF4] text-base">{routine.name}</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 bg-white dark:bg-[#111B18] px-2 py-0.5 rounded-full border border-slate-200 dark:border-[#253D36]">
-                    {routine.tasks?.length || 0} {(routine.tasks?.length === 1) ? 'task' : 'tasks'}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteRoutine(routine.id)}
-                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors ml-1 cursor-pointer"
-                    title="Delete Routine"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
+        <div className="flex flex-col gap-4">
+          {routines.map((routine) => {
+            const isCollapsed = !!collapsedRoutines[routine.id];
+            const taskCount = routine.tasks?.length || 0;
 
-              <div className="p-4">
-                {routine.tasks?.length > 0 ? (
-                  <div className="flex flex-col gap-2.5 mb-4">
-                    {routine.tasks.map((task, index) => (
-                      <div key={task.id || index} className="group flex items-center justify-between p-3 bg-slate-50 dark:bg-[#1C2C27] rounded-xl border border-slate-100 dark:border-[#253D36]">
-                        <div className="flex items-center gap-3">
-                          <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{task.name}</span>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                <Layers size={10} />
-                                {task.room}
-                              </span>
-                              {task.assignedTo && (
-                                <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                                  <User size={10} />
-                                  {allAssignees.find((a) => a.uid === task.assignedTo)?.name || 'Someone'}
-                                </span>
-                              )}
+            return (
+              <div
+                key={routine.id}
+                className="bg-white dark:bg-[#15221E] border border-slate-200 dark:border-[#213630] rounded-3xl shadow-xs overflow-hidden transition-all duration-200"
+              >
+                {/* Routine Header / Accordion trigger */}
+                <div className="bg-slate-50/50 dark:bg-[#1C2C27]/30 px-5 py-4 border-b border-slate-100 dark:border-[#213630] flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleCollapse(routine.id)}
+                    className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer group"
+                  >
+                    <div className="p-1 rounded-lg text-slate-400 group-hover:text-emerald-600 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/40 transition-colors">
+                      {isCollapsed ? (
+                        <ChevronRight size={18} className="transition-transform" />
+                      ) : (
+                        <ChevronDown size={18} className="transition-transform" />
+                      )}
+                    </div>
+                    <h3 className="font-extrabold text-teal-950 dark:text-[#F0FDF4] text-base truncate group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">
+                      {routine.name}
+                    </h3>
+                  </button>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleCollapse(routine.id)}
+                      className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#111B18] px-2.5 py-1 rounded-full border border-slate-200 dark:border-[#253D36] hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors cursor-pointer"
+                    >
+                      {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRoutine(routine.id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors ml-1 cursor-pointer"
+                      title="Delete Routine"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Collapsible Content */}
+                {!isCollapsed && (
+                  <div className="p-4 animate-fade-in">
+                    {routine.tasks?.length > 0 ? (
+                      <div className="flex flex-col gap-2.5 mb-4">
+                        {routine.tasks.map((task, index) => (
+                          <div key={task.id || index} className="group flex items-center justify-between p-3 bg-slate-50 dark:bg-[#1C2C27] rounded-xl border border-slate-100 dark:border-[#253D36]">
+                            <div className="flex items-center gap-3">
+                              <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{task.name}</span>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                    <Layers size={10} />
+                                    {task.room}
+                                  </span>
+                                  {task.assignedTo && (
+                                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                                      <User size={10} />
+                                      {allAssignees.find((a) => a.uid === task.assignedTo)?.name || 'Someone'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => openTaskForm(routine, index)}
+                                className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded-md transition-colors cursor-pointer"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTask(routine, index)}
+                                className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-md transition-colors cursor-pointer"
+                              >
+                                <Trash2 size={14} />
+                              </button>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openTaskForm(routine, index)}
-                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded-md transition-colors"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTask(routine, index)}
-                            className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-md transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-400 dark:text-slate-500 italic mb-4 px-2">No tasks in this routine yet.</p>
-                )}
+                    ) : (
+                      <p className="text-xs text-slate-400 dark:text-slate-500 italic mb-4 px-2">No tasks in this routine yet.</p>
+                    )}
 
-                {taskFormRoutineId === routine.id ? (
-                  <div className="bg-slate-50 dark:bg-[#1C2C27]/50 border border-emerald-200/60 dark:border-[#253D36] rounded-2xl p-4 mt-2">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">
-                        {editingTaskIndex !== null ? 'Edit Routine Task' : 'Add Routine Task'}
-                      </h4>
-                      <button onClick={resetTaskForm} className="text-slate-400 hover:text-slate-600 transition-colors">
-                        <X size={16} />
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <input
-                        type="text"
-                        placeholder="Task name"
-                        value={taskName}
-                        onChange={(e) => setTaskName(e.target.value)}
-                        className="w-full px-3 py-2 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] rounded-lg text-sm font-medium text-slate-900 dark:text-[#F0FDF4] focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        autoFocus
-                      />
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Room</label>
-                          <CustomSelect
-                            value={taskRoom}
-                            onChange={setTaskRoom}
-                            options={rooms.map((r) => ({ value: r, label: r }))}
-                          />
+                    {taskFormRoutineId === routine.id ? (
+                      <div className="bg-slate-50 dark:bg-[#1C2C27]/50 border border-emerald-200/60 dark:border-[#253D36] rounded-2xl p-4 mt-2">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-xs font-bold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">
+                            {editingTaskIndex !== null ? 'Edit Routine Task' : 'Add Routine Task'}
+                          </h4>
+                          <button onClick={resetTaskForm} className="text-slate-400 hover:text-slate-600 transition-colors">
+                            <X size={16} />
+                          </button>
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Priority</label>
-                          <CustomSelect
-                            value={taskPriority}
-                            onChange={setTaskPriority}
-                            options={PRIORITIES}
+                        <div className="flex flex-col gap-3">
+                          <input
+                            type="text"
+                            placeholder="Task name"
+                            value={taskName}
+                            onChange={(e) => setTaskName(e.target.value)}
+                            className="w-full px-3 py-2 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] rounded-lg text-sm font-medium text-slate-900 dark:text-[#F0FDF4] focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            autoFocus
                           />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Frequency</label>
-                          <CustomSelect
-                            value={taskFrequency}
-                            onChange={setTaskFrequency}
-                            options={FREQUENCIES}
-                          />
-                        </div>
-                        {workspace !== 'personal' && (
-                          <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase">Default Assignee</label>
-                            <CustomSelect
-                              value={taskAssignee}
-                              onChange={setTaskAssignee}
-                              options={[
-                                { value: '', label: 'Auto / Unassigned' },
-                                ...allAssignees.map(a => ({ value: a.uid, label: a.name }))
-                              ]}
-                            />
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase">Room</label>
+                              <CustomSelect
+                                value={taskRoom}
+                                onChange={setTaskRoom}
+                                options={rooms.map((r) => ({ value: r, label: r }))}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase">Priority</label>
+                              <CustomSelect
+                                value={taskPriority}
+                                onChange={setTaskPriority}
+                                options={PRIORITIES}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase">Frequency</label>
+                              <CustomSelect
+                                value={taskFrequency}
+                                onChange={setTaskFrequency}
+                                options={FREQUENCIES}
+                              />
+                            </div>
+                            {workspace !== 'personal' && (
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">Default Assignee</label>
+                                <CustomSelect
+                                  value={taskAssignee}
+                                  onChange={setTaskAssignee}
+                                  options={[
+                                    { value: '', label: 'Auto / Unassigned' },
+                                    ...allAssignees.map(a => ({ value: a.uid, label: a.name }))
+                                  ]}
+                                />
+                              </div>
+                            )}
                           </div>
-                        )}
+                          
+                          <textarea
+                            value={taskNotes}
+                            onChange={(e) => setTaskNotes(e.target.value)}
+                            placeholder="Additional notes (optional)"
+                            className="w-full px-3 py-2 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] rounded-lg text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[60px]"
+                          />
+                          
+                          <div className="flex justify-end mt-1">
+                            <button
+                              onClick={() => handleSaveTask(routine)}
+                              disabled={!taskName.trim()}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {editingTaskIndex !== null ? 'Save Changes' : 'Add to Routine'}
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <textarea
-                        value={taskNotes}
-                        onChange={(e) => setTaskNotes(e.target.value)}
-                        placeholder="Additional notes (optional)"
-                        className="w-full px-3 py-2 bg-white dark:bg-[#111B18] border border-slate-200 dark:border-[#253D36] rounded-lg text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[60px]"
-                      />
-                      
-                      <div className="flex justify-end mt-1">
-                        <button
-                          onClick={() => handleSaveTask(routine)}
-                          disabled={!taskName.trim()}
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {editingTaskIndex !== null ? 'Save Changes' : 'Add to Routine'}
-                        </button>
-                      </div>
-                    </div>
+                    ) : (
+                      <button
+                        onClick={() => openTaskForm(routine)}
+                        className="w-full py-2.5 border border-dashed border-emerald-300 dark:border-[#253D36] text-emerald-700 dark:text-emerald-400 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 hover:bg-emerald-50/50 dark:hover:bg-[#1C2C27] transition-colors cursor-pointer"
+                      >
+                        <Plus size={14} strokeWidth={2.5} />
+                        Add Task Template
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <button
-                    onClick={() => openTaskForm(routine)}
-                    className="w-full py-2.5 border border-dashed border-emerald-300 dark:border-[#253D36] text-emerald-700 dark:text-emerald-400 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 hover:bg-emerald-50/50 dark:hover:bg-[#1C2C27] transition-colors cursor-pointer"
-                  >
-                    <Plus size={14} strokeWidth={2.5} />
-                    Add Task Template
-                  </button>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

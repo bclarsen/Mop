@@ -698,15 +698,25 @@ function App() {
     }
   };
 
-  let filteredTasks = tasks;
+  const seenTaskIds = new Set();
+  const allWorkspaceTasks = tasks.filter((t) => {
+    if (!t.id || seenTaskIds.has(t.id)) return false;
+    seenTaskIds.add(t.id);
+    if (workspace === 'personal') {
+      return (t.workspace === 'personal' || !t.workspace) && (t.ownerUid === user?.uid || !t.ownerUid);
+    }
+    return t.workspace === workspace;
+  });
+
+  let workspaceFilteredTasks = allWorkspaceTasks;
   if (filterRoom !== 'All') {
-    filteredTasks = filteredTasks.filter((t) => t.room === filterRoom);
+    workspaceFilteredTasks = workspaceFilteredTasks.filter((t) => t.room === filterRoom);
   }
   if (filterPriority !== 'All') {
-    filteredTasks = filteredTasks.filter((t) => t.priority === filterPriority);
+    workspaceFilteredTasks = workspaceFilteredTasks.filter((t) => t.priority === filterPriority);
   }
   if (filterAssignee !== 'All') {
-    filteredTasks = filteredTasks.filter(
+    workspaceFilteredTasks = workspaceFilteredTasks.filter(
       (t) => t.assignedTo === filterAssignee,
     );
   }
@@ -722,7 +732,7 @@ function App() {
       startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000,
     );
 
-    filteredTasks = filteredTasks.filter((t) => {
+    workspaceFilteredTasks = workspaceFilteredTasks.filter((t) => {
       if (filterDate === 'none') return !t.dueDate;
       if (filterDate === 'overdue') return isOverdue(t);
       if (!t.dueDate) return false;
@@ -735,15 +745,7 @@ function App() {
     });
   }
 
-  const seenTaskIds = new Set();
-  const workspaceTasks = filteredTasks.filter((t) => {
-    if (!t.id || seenTaskIds.has(t.id)) return false;
-    seenTaskIds.add(t.id);
-    if (workspace === 'personal') {
-      return (t.workspace === 'personal' || !t.workspace) && t.ownerUid === user.uid;
-    }
-    return t.workspace === workspace;
-  });
+  const workspaceTasks = workspaceFilteredTasks;
 
   const activeFilterCount = [
     filterDate !== 'All',
@@ -1111,12 +1113,21 @@ function App() {
           )}
 
           {activeTab === 'living-space' && (
-            <LivingSpace rooms={rooms} workspace={workspaceDocId} />
+            <LivingSpace
+              rooms={rooms}
+              workspace={workspaceDocId}
+              tasks={allWorkspaceTasks}
+              user={user}
+              onNavigateToRoom={(room) => {
+                setFilterRoom(room);
+                setActiveTab('tasks');
+              }}
+            />
           )}
 
           {activeTab === 'stats' && (
             <StatsPanel
-              tasks={tasks}
+              tasks={allWorkspaceTasks}
               currentUser={user}
               workspace={workspace}
             />

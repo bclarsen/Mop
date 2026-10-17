@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Award, Check, Medal, Trophy, TrendingUp, Layers } from 'lucide-react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
-import { formatCompletedAt, isOverdue } from '../utils/dateHelpers';
+import { formatCompletedAt, isOverdue, isTaskDone } from '../utils/dateHelpers';
+import CleanlinessHealthRing from './CleanlinessHealthRing';
 
 const PODIUM = [
   { Icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/60', label: '1st place' },
@@ -10,7 +11,7 @@ const PODIUM = [
   { Icon: Award, color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50/50 dark:bg-amber-950/40', label: '3rd place' },
 ];
 
-function StatsPanel({ tasks, currentUser, workspace }) {
+function StatsPanel({ tasks = [], currentUser, workspace }) {
   const [historyEntries, setHistoryEntries] = useState([]);
   const [now] = useState(() => Date.now());
 
@@ -31,12 +32,25 @@ function StatsPanel({ tasks, currentUser, workspace }) {
     );
   }, [currentUser?.uid, workspace]);
 
-  const totalTasks = tasks.length;
-  const totalCompletions = tasks.reduce((sum, t) => sum + (t.completionHistory?.length || 0), 0);
+  // Robustly isolate unique tasks belonging to this workspace
+  const workspaceTasks = useMemo(() => {
+    const seen = new Set();
+    return (tasks || []).filter((t) => {
+      if (!t.id || seen.has(t.id)) return false;
+      seen.add(t.id);
+      if (workspace === 'personal') {
+        return (t.workspace === 'personal' || !t.workspace) && (t.ownerUid === currentUser?.uid || !t.ownerUid);
+      }
+      return t.workspace === workspace;
+    });
+  }, [tasks, workspace, currentUser?.uid]);
+
+  const totalTasks = workspaceTasks.length;
+  const totalCompletions = workspaceTasks.reduce((sum, t) => sum + (t.completionHistory?.length || 0), 0);
 
   // Completions per person
   const byPerson = {};
-  tasks.forEach((task) => {
+  workspaceTasks.forEach((task) => {
     (task.completionHistory || []).forEach((h) => {
       const key = h.completedBy;
       if (!byPerson[key]) byPerson[key] = { name: h.completedByName || 'Unknown', count: 0 };
@@ -44,20 +58,22 @@ function StatsPanel({ tasks, currentUser, workspace }) {
     });
   });
 
-  // Completions per room
+  // Completions and health per room
   const byRoom = {};
-  tasks.forEach((task) => {
+  workspaceTasks.forEach((task) => {
     const room = task.room || 'Other';
-    if (!byRoom[room]) byRoom[room] = { total: 0, completions: 0 };
+    if (!byRoom[room]) byRoom[room] = { total: 0, completions: 0, activeDone: 0, overdue: 0 };
     byRoom[room].total++;
     byRoom[room].completions += (task.completionHistory?.length || 0);
+    if (isTaskDone(task)) byRoom[room].activeDone++;
+    if (isOverdue(task)) byRoom[room].overdue++;
   });
 
   const allCompletionEntries = useMemo(() => {
     const storedKeys = new Set(
       historyEntries.map((entry) => `${entry.taskId}:${entry.completedAt}`),
     );
-    const legacyEntries = tasks.flatMap((task) =>
+    const legacyEntries = workspaceTasks.flatMap((task) =>
       (task.completionHistory || [])
         .filter((entry) => !storedKeys.has(`${task.id}:${entry.completedAt}`))
         .map((entry, index) => ({
@@ -68,14 +84,14 @@ function StatsPanel({ tasks, currentUser, workspace }) {
         })),
     );
     return [...historyEntries, ...legacyEntries];
-  }, [historyEntries, tasks]);
+  }, [historyEntries, workspaceTasks]);
 
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
   const recentCompletions = allCompletionEntries
     .filter((entry) => entry.completedAt > sevenDaysAgo)
     .sort((a, b) => b.completedAt - a.completedAt);
 
-  const overdueCount = tasks.filter(isOverdue).length;
+  const overdueCount = workspaceTasks.filter(isOverdue).length;
 
   const sortedPeople = Object.entries(byPerson).sort((a, b) => b[1].count - a[1].count);
   const maxCount = sortedPeople[0]?.[1].count || 1;
@@ -178,14 +194,27 @@ function StatsPanel({ tasks, currentUser, workspace }) {
               <thead>
                 <tr className="border-b border-slate-100 dark:border-[#213630] text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">
                   <th className="pb-2 font-bold">Room / Area</th>
+                  <th className="pb-2 font-bold text-center">Health</th>
                   <th className="pb-2 font-bold text-center">Tasks</th>
-                  <th className="pb-2 font-bold text-right">Completions</th>
+                  <th className="pb-2 font-bold text-right">Total Done</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-[#213630]">
-                {Object.entries(byRoom).map(([room, data]) => (
+                {Object.entries(byRoom).map(([room, data], idx) => (
                   <tr key={room} className="hover:bg-slate-50/60 dark:hover:bg-[#1C2C27]/60 transition-colors">
                     <td className="py-2.5 font-bold text-teal-950 dark:text-[#F0FDF4]">{room}</td>
+                    <td className="py-2.5 text-center">
+                      <div className="flex justify-center">
+                        <CleanlinessHealthRing
+                          totalTasks={data.total}
+                          completedTasks={data.activeDone}
+                          overdueTasks={data.overdue}
+                          size={38}
+                          strokeWidth={3.5}
+                          uniqueId={`stats-room-${idx}`}
+                        />
+                      </div>
+                    </td>
                     <td className="py-2.5 text-center text-slate-600 dark:text-slate-300 font-semibold">{data.total}</td>
                     <td className="py-2.5 text-right font-extrabold text-emerald-700 dark:text-emerald-400">{data.completions}</td>
                   </tr>
