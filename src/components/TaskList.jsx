@@ -142,11 +142,18 @@ function TaskList({
       {/* Active Tasks Section */}
       {activeTasks.length > 0 && (
         <section className="flex flex-col gap-6">
-          <div className="flex items-center gap-2.5 pb-1.5 border-b border-emerald-100/80 dark:border-[#213630]">
-            <ListTodo size={20} className="text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-sm md:text-base font-extrabold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">
-              Active Tasks ({activeTasks.length})
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1.5 border-b border-emerald-100/80 dark:border-[#213630]">
+            <div className="flex items-center gap-2.5">
+              <ListTodo size={20} className="text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-sm md:text-base font-extrabold text-teal-950 dark:text-[#F0FDF4] uppercase tracking-wider">
+                Active Tasks ({activeTasks.length})
+              </h2>
+            </div>
+            <div className="sm:hidden flex items-center gap-2 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50/80 dark:bg-[#1C2C27] px-2.5 py-1 rounded-lg border border-emerald-100 dark:border-[#253D36] self-start">
+              <span>👉 Swipe right to finish</span>
+              <span className="text-emerald-300 dark:text-emerald-700">·</span>
+              <span>👈 Swipe left to delete</span>
+            </div>
           </div>
 
           {Object.entries(groupAndSort(activeTasks)).map(([room, roomTasks]) => (
